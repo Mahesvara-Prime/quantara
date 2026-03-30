@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Styles globaux sobres pour l’interface publique.
+  L’objectif est de garantir un fond non-noir pur (#111827) et des contrastes cohérents.
+*/
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+  background: #111827;
+}
+
