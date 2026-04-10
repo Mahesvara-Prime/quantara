@@ -1,13 +1,8 @@
 /**
- * Fake authentication centralisée (pour l'interface privée).
+ * Données de secours lorsque `VITE_API_BASE_URL` n'est pas défini.
  *
- * Rôle:
- * - Servir de source unique pour tester l'accès aux routes privées
- * - Permettre de modifier facilement `isAuthenticated` + le mock user
- *
- * Note:
- * - Ce fichier est volontairement simple et auto-documenté pour pouvoir
- *   être remplacé facilement par une authentification backend plus tard.
+ * Avec une URL backend (`AuthProvider`), le login utilise POST /auth/login et le JWT ;
+ * ce mock sert uniquement au mode développement sans API.
  */
 
 export type MockUser = {
@@ -34,16 +29,8 @@ export const authMock: AuthMock = {
   },
 };
 
-/**
- * Met à jour la valeur d'auth (utilisé par login/logout).
- * TODO backend: brancher la session réelle.
- */
+/** Utilisé par `AuthContext` en mode sans API (login mock). */
 export function setAuthenticated(isAuthenticated: boolean) {
   authMock.isAuthenticated = isAuthenticated;
-}
-
-/** Logout mock: coupe l'accès et laisse le router rediriger. */
-export function logoutMock() {
-  authMock.isAuthenticated = false;
 }
 

@@ -2,7 +2,7 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import { Divider } from "../ui/Divider";
 import { Logo } from "./Logo";
-import { authMock } from "../../features/auth/auth.mock";
+import { useAuth } from "../../features/auth/AuthContext";
 
 type NavItem = {
   to: string;
@@ -23,7 +23,8 @@ const navItems: NavItem[] = [
 
 function sidebarLinkClass(isActive: boolean) {
   return [
-    "px-4 py-2 rounded-lg text-sm transition-colors",
+    "block w-full rounded-lg px-3 py-2.5 text-left text-sm leading-snug transition-colors",
+    "whitespace-normal break-words",
     isActive
       ? "bg-[#1F2937] text-[#E6EDF3] border border-white/10"
       : "text-[#E6EDF3]/80 hover:bg-white/5",
@@ -36,27 +37,34 @@ function sidebarLinkClass(isActive: boolean) {
  * - Met en évidence l'élément actif via `NavLink`.
  */
 export function PrivateSidebar() {
+  const { user } = useAuth();
+  const first = user?.firstName?.trim() ?? "";
+  const last = user?.lastName?.trim() ?? "";
+
   return (
     <aside
       className={[
-        "hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64",
-        "bg-[#111827] border-r border-white/10",
+        "hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:z-30",
+        "w-72 min-w-72 shrink-0 border-r border-white/10 bg-[#111827]",
       ].join(" ")}
+      aria-label="Navigation principale"
     >
-      <div className="px-4 py-5">
+      <div className="shrink-0 px-4 py-5">
         <Logo />
-        <p className="mt-3 text-sm text-[#E6EDF3]/80">
-          Welcome back, {authMock.user.firstName} {authMock.user.lastName}
+        <p className="mt-3 text-sm leading-snug text-[#E6EDF3]/80 break-words">
+          Welcome back, {first} {last}
         </p>
       </div>
 
-      <Divider className="my-4" />
+      <Divider className="mx-2 shrink-0" />
 
-      <nav className="flex-1 overflow-y-auto px-2 pb-4">
+      {/* Une colonne verticale : chaque lien est block full-width (évite le flux inline qui cassait) */}
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden px-2 pb-6 pt-2">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.to === "/dashboard"}
             className={({ isActive }) => sidebarLinkClass(isActive)}
           >
             {item.label}

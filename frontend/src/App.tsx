@@ -1,12 +1,17 @@
 import React from "react";
 import { RouterProvider } from "react-router-dom";
+import { AuthProvider } from "./features/auth/AuthContext";
 import { router } from "./app/router";
 
 /**
  * Racine de l’UI.
- * Ne contient aucune logique métier : on branche uniquement le router.
+ * `AuthProvider` enveloppe le router pour la session (JWT / mock) et les gardes de route.
  */
 export function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }
 

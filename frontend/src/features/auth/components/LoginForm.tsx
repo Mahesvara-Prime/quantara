@@ -5,19 +5,23 @@ import { Button } from "../../../components/ui/Button";
 import { Divider } from "../../../components/ui/Divider";
 import { FormField } from "../../../components/forms/FormField";
 import { AuthOAuthButtons } from "./AuthOAuthButtons";
-import { authMock, setAuthenticated } from "../auth.mock";
+import { ApiHttpError } from "../../../shared/api/httpClient";
+import { useAuth } from "../AuthContext";
+import { AuthInvalidCredentialsError } from "../services/auth.service";
 
 /**
  * Formulaire Login avec validation.
  * - Email et Mot de passe requis.
- * - Validation locale avec messages d''erreur clairs.
- * - Prêt pour appel API auth.service.login().
+ * - Validation locale avec messages d'erreur clairs.
+ * - Connexion réelle via `AuthProvider.signIn` (backend si `VITE_API_BASE_URL`, sinon mock).
  */
 export function LoginForm() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [errors, setErrors] = React.useState<string[]>([]);
+  const [submitting, setSubmitting] = React.useState(false);
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const alertTitle =
     errors.length === 1 && errors[0] === "Email ou mot de passe incorrect."
       ? "Identifiants incorrects"
@@ -47,29 +51,32 @@ export function LoginForm() {
     return newErrors.length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors([]);
 
-    if (validateForm()) {
-      // Auth fake: comparaison locale email/password.
-      const normalizedEmail = email.trim().toLowerCase();
-      const expectedEmail = authMock.user.email.trim().toLowerCase();
-      const normalizedPassword = password.trim();
-      const expectedPassword = authMock.user.password.trim();
+    if (!validateForm()) return;
 
-      if (
-        normalizedEmail === expectedEmail &&
-        normalizedPassword === expectedPassword
-      ) {
-        // Auth ok: accès aux routes privées puis redirection dashboard.
-        setAuthenticated(true);
-        navigate("/dashboard", { replace: true });
+    setSubmitting(true);
+    try {
+      await signIn(email, password);
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      if (err instanceof AuthInvalidCredentialsError) {
+        setErrors(["Email ou mot de passe incorrect."]);
         return;
       }
-
-      // Identifiants invalides: rester sur /login avec un message clair.
-      setErrors(["Email ou mot de passe incorrect."]);
+      if (err instanceof ApiHttpError) {
+        setErrors([err.message || "Impossible de contacter le serveur."]);
+        return;
+      }
+      if (err instanceof Error && err.message) {
+        setErrors([err.message]);
+        return;
+      }
+      setErrors(["Une erreur inattendue est survenue. Réessaie plus tard."]);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -113,8 +120,8 @@ export function LoginForm() {
         }}
       />
 
-      <Button className="w-full" type="submit">
-        Se connecter
+      <Button className="w-full" type="submit" disabled={submitting}>
+        {submitting ? "Connexion…" : "Se connecter"}
       </Button>
 
       <div className="relative py-2">
