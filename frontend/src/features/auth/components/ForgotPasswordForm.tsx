@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Alert } from "../../../components/ui/Alert";
 import { Button } from "../../../components/ui/Button";
 import { FormField } from "../../../components/forms/FormField";
@@ -37,7 +37,6 @@ export function ForgotPasswordForm() {
 
     if (validateForm()) {
       setSubmitted(true);
-      // TODO: Appeler auth.service.forgotPassword(email) ici
     }
   };
 
@@ -56,14 +55,15 @@ export function ForgotPasswordForm() {
       )}
 
       {submitted && errors.length === 0 && (
-        <Alert variant="success" title="Email envoyé (UI)">
-          Si un compte existe, tu recevras un lien de réinitialisation.
+        <Alert variant="info" title="MVP">
+          Réinitialisation par email non exposée dans cette version — contacte un administrateur ou
+          recrée un compte côté base si besoin.
         </Alert>
       )}
 
       {!submitted && errors.length === 0 && (
         <Alert variant="info">
-          Renseigne ton email pour recevoir un lien de réinitialisation (UI uniquement).
+          MVP : pas d’envoi d’email — ce formulaire valide uniquement le format.
         </Alert>
       )}
 

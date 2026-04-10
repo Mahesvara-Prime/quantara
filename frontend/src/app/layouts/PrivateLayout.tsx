@@ -13,8 +13,9 @@ export function PrivateLayout() {
     <div className="min-h-dvh bg-[#111827] text-[#E6EDF3]">
       <PrivateSidebar />
 
-      <main className="min-h-dvh lg:pl-64">
-        <div className="py-6 px-4 sm:px-6">
+      {/* Largeur sidebar alignée sur `PrivateSidebar` (w-72 = 18rem) */}
+      <main className="min-h-dvh md:pl-72">
+        <div className="mx-auto max-w-[1600px] py-6 px-4 sm:px-6">
           <Outlet />
         </div>
       </main>

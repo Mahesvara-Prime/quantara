@@ -18,7 +18,7 @@ import { ProgressPage } from "../../features/progress";
  * Routes privées (interface authentifiée).
  *
  * - Le public existant reste inchangé (`publicRoutes`).
- * - Les pages privées sont protégées via `RequireAuth` (fake auth pour l'instant).
+ * - Les pages privées sont protégées via `RequireAuth` (session `AuthProvider`).
  */
 export const privateRoutes: RouteObject[] = [
   {

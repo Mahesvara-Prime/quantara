@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Alert } from "../../../components/ui/Alert";
 import { Button } from "../../../components/ui/Button";
 import { FormField } from "../../../components/forms/FormField";
@@ -44,7 +44,6 @@ export function ResetPasswordForm() {
 
     if (validateForm()) {
       setSubmitted(true);
-      // TODO: Appeler auth.service.resetPassword(password) ici
     }
   };
 
@@ -63,13 +62,14 @@ export function ResetPasswordForm() {
       )}
 
       {submitted && errors.length === 0 && (
-        <Alert variant="success" title="Mot de passe mis à jour (UI)">
-          Tu peux maintenant te connecter avec ton nouveau mot de passe.
+        <Alert variant="info" title="MVP">
+          Réinitialisation par token non incluse — ce formulaire ne modifie pas le mot de passe côté
+          serveur.
         </Alert>
       )}
 
       {!submitted && errors.length === 0 && (
-        <Alert variant="info">Choisis un nouveau mot de passe (UI uniquement).</Alert>
+        <Alert variant="info">MVP : saisie locale uniquement (pas d’API reset).</Alert>
       )}
 
       <FormField

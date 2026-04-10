@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Alert } from "../../../components/ui/Alert";
 import { Button } from "../../../components/ui/Button";
 import { Divider } from "../../../components/ui/Divider";
@@ -77,8 +77,9 @@ export function RegisterForm() {
       )}
 
       {submitted && errors.length === 0 && (
-        <Alert variant="info" title="UI uniquement">
-          Aucun backend n''est branché. Ce formulaire présente le design et la structure.
+        <Alert variant="info" title="MVP">
+          L’inscription via API n’est pas incluse dans ce MVP — utilise la page de connexion avec un
+          compte créé côté serveur.
         </Alert>
       )}
 
