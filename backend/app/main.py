@@ -16,6 +16,17 @@ from app.api.v1.router import api_v1_router
 from app.core.config import settings
 
 
+def _cors_params() -> tuple[list[str], bool]:
+    """Return (allow_origins, allow_credentials). Wildcard * disables credentials."""
+    raw = settings.cors_allowed_origins.strip()
+    if raw == "*":
+        return ["*"], False
+    origins = [o.strip() for o in raw.split(",") if o.strip()]
+    if not origins:
+        origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    return origins, True
+
+
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application instance."""
     app = FastAPI(
@@ -24,12 +35,11 @@ def create_app() -> FastAPI:
         version=settings.app_version,
     )
 
-    # CORS is open for now to simplify early frontend/backend integration.
-    # This should be tightened with environment-specific origins later.
+    cors_origins, cors_credentials = _cors_params()
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
+        allow_origins=cors_origins,
+        allow_credentials=cors_credentials,
         allow_methods=["*"],
         allow_headers=["*"],
     )

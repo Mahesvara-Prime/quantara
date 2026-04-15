@@ -33,11 +33,11 @@ from app.modules.identity import repository as identity_repository
 from app.modules.identity import rules as identity_rules
 from app.modules.progress import repository as progress_repository
 
-SEED_EMAIL = "apek062000@gmail.com"
+from scripts.seed_defaults import load_seed_user_config
 
 
 def seed_progress(session: Session) -> None:
-    email = identity_rules.normalize_email(SEED_EMAIL)
+    email = identity_rules.normalize_email(load_seed_user_config().email)
     user = identity_repository.get_user_by_email(session, email)
     if user is None:
         print(f"No user found for {email}; run seed_test_user first.")

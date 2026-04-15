@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     resend_api_key: str | None = None
     resend_from_email: str = "Quantara <onboarding@resend.dev>"
 
+    # Comma-separated browser origins for CORS. Use "*" alone to allow any origin
+    # (credentials are then disabled — OK for quick tests, not for cookie-based auth).
+    cors_allowed_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

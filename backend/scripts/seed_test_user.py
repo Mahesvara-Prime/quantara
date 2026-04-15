@@ -1,5 +1,5 @@
 """
-Create the primary Quantara test user if it does not already exist.
+Create a demo Quantara user if it does not already exist.
 
 Run from the `backend` directory:
 
@@ -7,6 +7,8 @@ Run from the `backend` directory:
 
 Requires PostgreSQL reachable via app settings (see app.core.config).
 Idempotent: skips when the email is already registered.
+
+Credentials default to local-dev values; override with QUANTARA_SEED_* (see .env.example).
 """
 
 from __future__ import annotations
@@ -29,24 +31,22 @@ from app.modules.simulation import models as _simulation_models  # noqa: F401
 from app.modules.identity import repository, rules
 from app.modules.identity.models import User
 
-SEED_FIRST_NAME = "Kelvin"
-SEED_LAST_NAME = "Azur"
-SEED_EMAIL = "apek062000@gmail.com"
-SEED_PASSWORD = "Quantara20026@"
+from scripts.seed_defaults import load_seed_user_config
 
 
 def seed_test_user(session: Session) -> None:
-    """Insert the seed user when no row exists for SEED_EMAIL."""
-    normalized = rules.normalize_email(SEED_EMAIL)
+    """Insert the seed user when no row exists for the configured email."""
+    cfg = load_seed_user_config()
+    normalized = rules.normalize_email(cfg.email)
     if repository.get_user_by_email(session, normalized) is not None:
         print(f"User already exists: {normalized}")
         return
 
     user = User(
-        first_name=SEED_FIRST_NAME,
-        last_name=SEED_LAST_NAME,
+        first_name=cfg.first_name,
+        last_name=cfg.last_name,
         email=normalized,
-        hashed_password=rules.hash_password(SEED_PASSWORD),
+        hashed_password=rules.hash_password(cfg.password),
         language="fr",
         notifications_enabled=True,
         is_active=True,

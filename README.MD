@@ -22,7 +22,7 @@ L'objectif est de créer une plateforme permettant aux utilisateurs de comprendr
 
 # Architecture du projet
 
-Le projet est organisé sous forme de **monorepo**.`
+Le projet est organisé sous forme de **monorepo**.
 
 ```text
 quantara/
@@ -32,6 +32,17 @@ quantara/
 ├── infra/
 └── .github/
 ```
+
+# Licence
+
+Le code est publié sous [licence MIT](LICENSE).
+
+# Configuration et déploiement
+
+- **Frontend** : copier `frontend/.env.example` vers `frontend/.env`, définir `VITE_API_BASE_URL` (URL du backend, ex. `http://127.0.0.1:8000` en local). Rebuild le front pour la production avec l’URL publique de l’API.
+- **Backend** : copier `backend/.env.example` vers `backend/.env`. Variables importantes : `DATABASE_URL`, `JWT_SECRET_KEY` (chaîne longue et aléatoire en production), `CORS_ALLOWED_ORIGINS` (origines du front, séparées par des virgules), `PUBLIC_APP_URL` (origine du SPA pour les liens e-mail).
+- **Compte de démo** : depuis `backend/`, après migrations et base prête : `python -m scripts.seed_test_user`. Les identifiants par défaut sont pour le développement local ; en environnement partagé, définir `QUANTARA_SEED_EMAIL` et `QUANTARA_SEED_PASSWORD` (voir `backend/.env.example`).
+- Ne pas commiter de fichiers `.env` ni de secrets dans le dépôt.
 
 # Technologies
 
