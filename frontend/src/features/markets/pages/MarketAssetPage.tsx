@@ -1,216 +1,248 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Card } from "../../../components/ui/Card";
 import { Button } from "../../../components/ui/Button";
 import { Divider } from "../../../components/ui/Divider";
-import { Link } from "react-router-dom";
+import { Alert } from "../../../components/ui/Alert";
+import { Spinner } from "../../../components/ui/Spinner";
+import { isApiConfigured } from "../../../shared/api";
+import { ApiHttpError } from "../../../shared/api/httpClient";
+import type { AssetDetailDto, CandleDto, PositionDto } from "../../../shared/api/types/backend";
+import { getPortfolioPositions } from "../../private/services/portfolio.service";
+import { ASSET_CHART_TIMEFRAMES, type ChartTimeframeApi } from "../constants";
+import { AssetCandleChart, type ChartTradingOverlay } from "../components/AssetCandleChart";
+import { getAssetCandles, getAssetDetail } from "../services/markets.service";
+
+function candleLimitForTimeframe(timeframe: ChartTimeframeApi): number {
+  switch (timeframe) {
+    case "1h":
+      return 300;
+    case "4h":
+      return 400;
+    case "1d":
+      return 500;
+    case "30d":
+      return 500;
+    case "90d":
+      return 700;
+    default:
+      return 500;
+  }
+}
 
 export function MarketAssetPage() {
   /*
     Rôle: page Asset Detail / Chart privée.
-    Objectif UX (guide): analyser un actif.
-    Important (guide): PAS dans la sidebar (c'est le cas via `PrivateSidebar`).
-    Contenu (guide): chart principal, timeframe, prix, accès simulation.
-    Wireframe: chart-visuel.md.
+    Données: GET /api/v1/assets/{symbol} et GET /api/v1/assets/{symbol}/candles.
+    Timeframes alignés sur le backend (rules.validate_timeframe).
   */
 
   const { asset } = useParams<{ asset: string }>();
-  const symbol = asset ?? "BTC";
+  const symbol = (asset ?? "BTC").trim();
 
-  const [timeframe, setTimeframe] = React.useState<"1m" | "5m" | "1h" | "1D">(
-    "1h"
+  const [timeframe, setTimeframe] = React.useState<ChartTimeframeApi>(
+    ASSET_CHART_TIMEFRAMES[0].apiValue,
   );
 
-  // TODO: remplacer par données backend (prix, série OHLC, indicateurs).
-  const price = 43000;
+  const [detail, setDetail] = React.useState<AssetDetailDto | null>(null);
+  const [candles, setCandles] = React.useState<CandleDto[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [chartWarning, setChartWarning] = React.useState<string | null>(null);
+  const [positions, setPositions] = React.useState<PositionDto[]>([]);
 
-  /**
-   * Composant graphique placeholder (candlestick-like).
-   * Objectif: donner la hiérarchie visuelle "graphique dominant" du wireframe.
-   */
-  function CandlestickPlaceholder() {
-    const w = 740;
-    const h = 300;
-    const count = 28;
+  const apiMissing = !isApiConfigured();
 
-    // Graine pseudo-déterministe selon le timeframe pour varier la forme.
-    const seed =
-      timeframe === "1m" ? 1 : timeframe === "5m" ? 2 : timeframe === "1h" ? 3 : 4;
+  const tradingOverlay = React.useMemo((): ChartTradingOverlay | null => {
+    const sym = symbol.trim().toUpperCase();
+    const p = positions.find((x) => x.symbol.trim().toUpperCase() === sym);
+    if (!p || p.quantity <= 0) return null;
+    return {
+      averageEntryPrice: p.average_entry_price,
+      stopLoss: p.stop_loss ?? undefined,
+      takeProfit: p.take_profit ?? undefined,
+    };
+  }, [positions, symbol]);
 
-    const candles = Array.from({ length: count }).map((_, i) => {
-      const t = i / (count - 1);
-      const base = 0.45 + 0.15 * Math.sin((t * Math.PI * 2 + seed) * 1.2);
-      const open = base + 0.05 * Math.sin(i * 0.7 + seed);
-      const close = base + 0.05 * Math.cos(i * 0.6 + seed);
-      const high =
-        Math.max(open, close) + 0.08 * (0.3 + Math.abs(Math.sin(i + seed)));
-      const low =
-        Math.min(open, close) - 0.08 * (0.3 + Math.abs(Math.cos(i + seed)));
-      return { open, close, high, low };
+  React.useEffect(() => {
+    if (apiMissing) {
+      setPositions([]);
+      return;
+    }
+    getPortfolioPositions()
+      .then(setPositions)
+      .catch(() => setPositions([]));
+  }, [apiMissing, symbol]);
+
+  React.useEffect(() => {
+    if (apiMissing || !symbol) {
+      setLoading(false);
+      setDetail(null);
+      setCandles([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setChartWarning(null);
+
+    const candleLimit = candleLimitForTimeframe(timeframe);
+    (async () => {
+      const [detailRes, candlesRes] = await Promise.allSettled([
+        getAssetDetail(symbol),
+        getAssetCandles(symbol, timeframe, candleLimit),
+      ]);
+      if (cancelled) return;
+
+      if (detailRes.status === "fulfilled") {
+        setDetail(detailRes.value);
+      } else {
+        setDetail(null);
+        const reason = detailRes.reason;
+        if (reason instanceof ApiHttpError) setError(reason.message);
+        else setError("Impossible de charger l’actif.");
+      }
+
+      if (candlesRes.status === "fulfilled") {
+        setCandles(candlesRes.value);
+      } else {
+        const reason = candlesRes.reason;
+        if (reason instanceof ApiHttpError) {
+          setChartWarning(
+            reason.status === 503
+              ? "Le fournisseur de marché limite temporairement les requêtes. Dernières bougies conservées."
+              : reason.message,
+          );
+        } else {
+          setChartWarning("Impossible de charger les bougies pour cette période.");
+        }
+      }
+      setLoading(false);
+    })().catch((e) => {
+      if (cancelled) return;
+      if (e instanceof ApiHttpError) setError(e.message);
+      else setError("Impossible de charger l’actif.");
+      setLoading(false);
     });
 
-    const y = (v: number) => h - v * h;
+    return () => {
+      cancelled = true;
+    };
+  }, [symbol, timeframe, apiMissing]);
 
-    return (
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[280px]">
-        <rect x="0" y="0" width={w} height={h} fill="#111827" rx="14" />
-
-        {/* Grid léger */}
-        {Array.from({ length: 6 }).map((_, i) => {
-          const yy = (i / 5) * h;
-          return (
-            <line
-              key={i}
-              x1="30"
-              x2={w - 20}
-              y1={yy}
-              y2={yy}
-              stroke="#ffffff"
-              strokeOpacity="0.06"
-            />
-          );
-        })}
-
-        {candles.map((c, i) => {
-          const cx = 30 + (i / (count - 1)) * (w - 50);
-          const candleW = 10;
-          const isUp = c.close >= c.open;
-          const color = isUp ? "#22C55E" : "#EF4444";
-
-          const yHigh = y(Math.min(1, c.high));
-          const yLow = y(Math.max(0, c.low));
-          const yOpen = y(Math.min(1, c.open));
-          const yClose = y(Math.max(0, c.close));
-
-          const top = Math.min(yOpen, yClose);
-          const bottom = Math.max(yOpen, yClose);
-          const bodyH = Math.max(6, bottom - top);
-
-          return (
-            <g key={i}>
-              {/* Wick */}
-              <line
-                x1={cx}
-                x2={cx}
-                y1={yHigh}
-                y2={yLow}
-                stroke={color}
-                strokeWidth="2"
-                strokeOpacity="0.7"
-              />
-              {/* Body */}
-              <rect
-                x={cx - candleW / 2}
-                y={top}
-                width={candleW}
-                height={bodyH}
-                fill={color}
-                fillOpacity="0.75"
-                stroke={color}
-                strokeOpacity="0.6"
-                strokeWidth="1"
-                rx="2"
-              />
-            </g>
-          );
-        })}
-
-        <text
-          x={w / 2}
-          y={h - 16}
-          textAnchor="middle"
-          fill="#E6EDF3"
-          fillOpacity="0.5"
-          fontSize="12"
-        >
-          indicators / drawings / tools
-        </text>
-      </svg>
-    );
-  }
+  const price = detail?.price ?? 0;
+  const changePct = detail?.change_percent ?? 0;
+  const isPositive = changePct >= 0;
 
   return (
     <div className="space-y-6">
-      {/* Wireframe: titre actif + timeframe + prix */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
-            {symbol} / USD
+            {detail?.symbol ?? symbol} / USD
           </h1>
+          {detail ? (
+            <p className="mt-1 text-sm text-[#E6EDF3]/70">{detail.name}</p>
+          ) : null}
           <p className="mt-1 text-sm text-[#E6EDF3]/70">
-            Price: ${price.toLocaleString()}
+            {loading ? (
+              <span className="inline-flex items-center gap-2">
+                <Spinner /> Chargement du prix…
+              </span>
+            ) : detail ? (
+              <>
+                Price: ${price.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+                <span
+                  className="ml-2 font-semibold"
+                  style={{ color: isPositive ? "#22C55E" : "#EF4444" }}
+                >
+                  {isPositive ? "+" : ""}
+                  {changePct.toFixed(2)}%
+                </span>
+              </>
+            ) : null}
           </p>
+          {detail ? (
+            <p className="mt-1 text-xs text-[#E6EDF3]/55">
+              24h high ${detail.high_24h.toLocaleString(undefined, { maximumFractionDigits: 6 })} ·
+              low ${detail.low_24h.toLocaleString(undefined, { maximumFractionDigits: 6 })}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {(["1m", "5m", "1h", "1D"] as const).map((tf) => (
+          {ASSET_CHART_TIMEFRAMES.map((tf) => (
             <Button
-              key={tf}
+              key={tf.apiValue}
               size="sm"
-              variant={tf === timeframe ? "primary" : "secondary"}
-              onClick={() => setTimeframe(tf)}
+              variant={tf.apiValue === timeframe ? "primary" : "secondary"}
+              onClick={() => setTimeframe(tf.apiValue)}
               type="button"
+              disabled={apiMissing || loading}
             >
-              {tf}
+              {tf.label}
             </Button>
           ))}
         </div>
       </div>
 
-      {/* Chart principal dominant */}
+      {apiMissing ? (
+        <Alert variant="error" title="API non configurée">
+          Définis <code className="rounded bg-white/10 px-1">VITE_API_BASE_URL</code> pour afficher le
+          détail et le graphique.
+        </Alert>
+      ) : null}
+
+      {error && !apiMissing ? (
+        <Alert variant="error" title="Erreur">
+          {error}
+        </Alert>
+      ) : null}
+
+      {chartWarning && !apiMissing ? (
+        <Alert variant="info" title="Graphique">
+          {chartWarning}
+        </Alert>
+      ) : null}
+
+      {/* Chart principal */}
       <Card className="p-4">
         <div className="px-2 pt-1">
-          <div className="text-sm font-semibold">CANDLESTICK CHART</div>
+          <div className="text-sm font-semibold">Graphique</div>
+          <p className="mt-1 text-xs text-[#E6EDF3]/50">
+            SMA, EMA, Bollinger, volume estimé, RSI — lignes Entrée / Stop / TP si position simulée
+            ouverte sur {symbol}.
+          </p>
         </div>
         <Divider className="my-3" />
-        <CandlestickPlaceholder />
+        {loading && !apiMissing ? (
+          <div className="flex h-[280px] items-center justify-center gap-2 text-sm text-[#E6EDF3]/70">
+            <Spinner /> Chargement du graphique…
+          </div>
+        ) : (
+          <AssetCandleChart candles={candles} tradingOverlay={tradingOverlay} />
+        )}
       </Card>
 
-      {/* 2 colonnes: Indicators + Trade Panel (wireframe) */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="p-6">
-          <h2 className="text-base font-semibold">Indicators</h2>
-          <Divider className="my-4" />
+      <Card className="p-6">
+        <h2 className="text-base font-semibold">Simulation papier</h2>
+        <Divider className="my-4" />
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-sm text-[#E6EDF3]/70">RSI</div>
-              <div className="text-sm font-semibold text-[#3B82F6]">56.2</div>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-sm text-[#E6EDF3]/70">MA</div>
-              <div className="text-sm font-semibold text-[#E6EDF3]">43,120</div>
-            </div>
-          </div>
+        <Alert variant="info" title="Ordres">
+          Passe par la page <strong className="text-[#E6EDF3]">Simulation</strong> pour acheter ou
+          vendre au prix marché ; tu peux y renseigner stop loss et take profit (affichés sur ce
+          graphique tant que la position est ouverte).
+        </Alert>
 
-          {/* TODO: brancher les indicateurs backend */}
-        </Card>
-
-        <Card className="p-6">
-          <h2 className="text-base font-semibold">Trade Panel</h2>
-          <Divider className="my-4" />
-
-          <div className="flex flex-col gap-3">
-            {/* TODO: bouton Buy/Sell branché sur le futur simulateur */}
-            <div className="flex gap-2">
-              <Button size="md" variant="secondary" disabled>
-                Buy
-              </Button>
-              <Button size="md" variant="secondary" disabled>
-                Sell
-              </Button>
-            </div>
-
-            {/* Guide: accès simulation */}
-            <Link to="/simulation" className="inline-block">
-              <Button size="md" variant="primary" className="w-full">
-                Access Simulation
-              </Button>
-            </Link>
-          </div>
-        </Card>
-      </div>
+        <div className="mt-4">
+          <Link to={`/simulation?symbol=${encodeURIComponent(symbol)}`} className="inline-block w-full">
+            <Button size="md" variant="primary" className="w-full" type="button">
+              Ouvrir la simulation · {symbol}
+            </Button>
+          </Link>
+        </div>
+      </Card>
     </div>
   );
 }
-

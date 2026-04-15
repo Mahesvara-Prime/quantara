@@ -4,6 +4,7 @@ import { PublicAuthLayout } from "../layouts/PublicAuthLayout";
 import { PublicLayout } from "../layouts/PublicLayout";
 import { LandingPage } from "../../features/landing";
 import {
+  ConfirmPasswordChangePage,
   ForgotPasswordPage,
   LoginPage,
   RegisterPage,
@@ -27,6 +28,7 @@ export const publicRoutes: RouteObject[] = [
           { path: "/register", element: <RegisterPage /> },
           { path: "/forgot-password", element: <ForgotPasswordPage /> },
           { path: "/reset-password", element: <ResetPasswordPage /> },
+          { path: "/confirm-password-change", element: <ConfirmPasswordChangePage /> },
         ],
       },
     ],

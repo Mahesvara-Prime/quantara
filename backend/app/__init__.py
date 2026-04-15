@@ -1,0 +1,1 @@
+"""Quantara backend application package."""

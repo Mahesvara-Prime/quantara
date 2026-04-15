@@ -5,59 +5,72 @@ import { PublicPageContainer } from "../../../components/common/PublicPageContai
 import { Divider } from "../../../components/ui/Divider";
 
 /**
- * Footer structuré.
- * Contient uniquement de la navigation statique (UI), sans logique métier.
+ * Pied de page — navigation utile, ton honnête MVP.
  */
 export function LandingFooter() {
   return (
-    <footer className="border-t border-white/10 bg-[#111827]">
+    <footer className="border-t border-white/10 bg-[#0f1419]">
       <PublicPageContainer>
-        <div className="py-12">
-          <div className="grid gap-8 md:grid-cols-5">
-            <div className="md:col-span-2">
-              <Logo />
-              <p className="mt-3 max-w-sm text-sm text-[#E6EDF3]/70">
-                Une interface claire et moderne pour analyser, simuler et apprendre.
+        <div className="py-14">
+          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+            <div className="lg:col-span-1">
+              <Link to="/" className="inline-block rounded-lg outline-none ring-offset-2 ring-offset-[#0f1419] focus-visible:ring-2 focus-visible:ring-[#3B82F6]/50">
+                <Logo />
+              </Link>
+              <p className="mt-4 max-w-xs text-sm leading-relaxed text-[#E6EDF3]/65">
+                Une plateforme pour explorer les marchés, s’exercer au trading fictif et suivre des
+                contenus pédagogiques — dans une interface pensée pour la clarté.
               </p>
             </div>
 
             <FooterColumn
-              title="Product"
+              title="Produit"
               links={[
-                { label: "Features", href: "#features" },
+                { label: "Fonctionnalités", href: "#features" },
                 { label: "Simulation", href: "#simulation" },
-                { label: "Learn", href: "#learn" },
+                { label: "Formation", href: "#learn" },
               ]}
             />
             <FooterColumn
-              title="Company"
+              title="Compte"
               links={[
-                { label: "About", href: "#" },
-                { label: "Careers", href: "#" },
-                { label: "Contact", href: "#" },
+                { label: "Connexion", href: "/login", router: true },
+                { label: "Inscription", href: "/register", router: true },
               ]}
             />
             <FooterColumn
-              title="Legal"
+              title="Informations"
               links={[
-                { label: "Privacy", href: "#" },
-                { label: "Terms", href: "#" },
-                { label: "Cookies", href: "#" },
+                {
+                  label: "Plateforme en évolution",
+                  href: "#",
+                  muted: true,
+                },
+                {
+                  label: "Données & confidentialité (bientôt)",
+                  href: "#",
+                  muted: true,
+                },
               ]}
             />
           </div>
 
-          <Divider className="my-8" />
+          <Divider className="my-10 border-white/[0.07]" />
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-xs text-[#E6EDF3]/55">
-            <div>© {new Date().getFullYear()} Quantara. All rights reserved.</div>
-            <div className="flex items-center gap-4">
-              <Link to="/login" className="hover:text-[#E6EDF3]/80">
-                Login
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs text-[#E6EDF3]/50">
+              © {new Date().getFullYear()} Quantara — produit en construction, usage éducatif.
+            </div>
+            <div className="flex flex-wrap items-center gap-4 text-xs text-[#E6EDF3]/60">
+              <Link to="/login" className="transition-colors hover:text-[#E6EDF3]">
+                Connexion
               </Link>
-              <Link to="/register" className="hover:text-[#E6EDF3]/80">
-                Sign Up
+              <Link to="/register" className="transition-colors hover:text-[#E6EDF3]">
+                Inscription
               </Link>
+              <a href="#features" className="transition-colors hover:text-[#E6EDF3]">
+                Haut de page
+              </a>
             </div>
           </div>
         </div>
@@ -71,21 +84,37 @@ function FooterColumn({
   links,
 }: {
   title: string;
-  links: Array<{ label: string; href: string }>;
+  links: Array<{ label: string; href: string; router?: boolean; muted?: boolean }>;
 }) {
   return (
     <div>
-      <div className="text-sm font-medium">{title}</div>
-      <ul className="mt-3 space-y-2 text-sm text-[#E6EDF3]/70">
+      <div className="text-xs font-semibold uppercase tracking-wider text-[#E6EDF3]/45">{title}</div>
+      <ul className="mt-4 space-y-2.5 text-sm">
         {links.map((l) => (
           <li key={l.label}>
-            <a className="hover:text-[#E6EDF3]" href={l.href}>
-              {l.label}
-            </a>
+            {l.router ? (
+              <Link
+                to={l.href}
+                className="text-[#E6EDF3]/70 transition-colors hover:text-[#E6EDF3]"
+              >
+                {l.label}
+              </Link>
+            ) : (
+              <a
+                href={l.href}
+                className={
+                  l.muted
+                    ? "cursor-default text-[#E6EDF3]/45"
+                    : "text-[#E6EDF3]/70 transition-colors hover:text-[#E6EDF3]"
+                }
+                onClick={l.muted ? (e) => e.preventDefault() : undefined}
+              >
+                {l.label}
+              </a>
+            )}
           </li>
         ))}
       </ul>
     </div>
   );
 }
-

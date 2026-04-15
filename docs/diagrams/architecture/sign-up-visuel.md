@@ -31,6 +31,6 @@
 └──────────────────────────────────────────────────────────────┘
 
 Register
- ├→ Dashboard (succès)
+ ├→ Dashboard (succès) — `POST /api/v1/auth/register` + JWT si API configurée
  ├→ Login
- └→ Email verification (optionnel)
+ └→ Vérification email (hors périmètre actuel)

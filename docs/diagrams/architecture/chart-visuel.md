@@ -9,7 +9,7 @@
 │ Profile        │  │                                                      │   │
 │ Settings       │  │              CANDLESTICK CHART                       │   │
 │                │  │                                                      │   │
-│                │  │   indicators / drawings / tools                      │   │
+│                │  │  Barre : SMA (off/9/20/50) · RSI(14) · crosshair OHLC │   │
 │                │  │                                                      │   │
 │                │  └──────────────────────────────────────────────────────┘   │
 │                │                                                             │
