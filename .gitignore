@@ -42,14 +42,6 @@ dist/
 build/
 
 # =====================================
-# Cours PDF (locaux, hors dépôt)
-# =====================================
-Blockchain/
-Cryptomonnaies/
-Investissement/
-Trading/
-
-# =====================================
 # OS / IDE (optionnel)
 # =====================================
 .DS_Store
