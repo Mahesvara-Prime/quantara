@@ -1,7 +1,12 @@
 """
-Insert demo courses and lessons if they are not already present (idempotent by title / order).
+Insert or update demo courses and lessons (idempotent by course title + lesson order_index).
 
-Run from `backend`:
+Content lives in scripts/education_corpus/markdown/*.md (>= 500 words per lesson).
+Regenerate courses 2–8 Markdown from templates:
+
+    python scripts/education_corpus/build_markdown_courses.py
+
+Run seed from `backend`:
 
     python -m scripts.seed_education
 
@@ -17,7 +22,7 @@ _BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(_BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(_BACKEND_ROOT))
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
@@ -29,6 +34,9 @@ from app.modules.progress import models as _progress_models  # noqa: F401
 from app.modules.simulation import models as _simulation_models  # noqa: F401
 
 from app.modules.education.models import Course, Lesson
+from app.modules.progress.models import LessonProgress
+
+from scripts.education_corpus import load_all_lessons_validated
 
 
 def _ensure_course(
@@ -40,6 +48,8 @@ def _ensure_course(
 ) -> Course:
     existing = session.scalar(select(Course).where(Course.title == title))
     if existing:
+        existing.description = description
+        existing.level = level
         return existing
     c = Course(title=title, description=description, level=level)
     session.add(c)
@@ -47,7 +57,7 @@ def _ensure_course(
     return c
 
 
-def _ensure_lesson(
+def _upsert_lesson(
     session: Session,
     *,
     course_id: int,
@@ -55,10 +65,13 @@ def _ensure_lesson(
     content: str,
     order_index: int,
 ) -> None:
+    """Insert or update lesson body (titres + Markdown) pour aligner seed et BDD existante."""
     existing = session.scalar(
         select(Lesson).where(Lesson.course_id == course_id, Lesson.order_index == order_index)
     )
     if existing:
+        existing.title = title
+        existing.content = content
         return
     session.add(
         Lesson(
@@ -71,123 +84,41 @@ def _ensure_lesson(
 
 
 def seed_education(session: Session) -> None:
-    # --- Course 1 ---
-    c1 = _ensure_course(
-        session,
-        title="Introduction à la finance et aux cryptomonnaies",
-        description=(
-            "Comprendre les notions essentielles : actifs, risque, volatilité, "
-            "et pourquoi les marchés crypto diffèrent des marchés traditionnels."
-        ),
-        level="beginner",
-    )
-    lessons_c1 = [
-        (
-            "Qu’est-ce qu’un actif numérique ?",
-            (
-                "Un actif numérique représente une valeur sur un registre distribué. "
-                "Les cryptomonnaies sont échangées 24h/24 ; la liquidité et la volatilité "
-                "sont généralement plus élevées que sur les actions classiques.\n\n"
-                "Objectifs : distinguer token, blockchain et plateforme d’échange."
-            ),
-        ),
-        (
-            "Risque et rendement",
-            (
-                "Le rendement attendu est lié au risque assumé. Sur les crypto, "
-                "les mouvements de prix peuvent être amplifiés par l’effet de levier "
-                "et le sentiment du marché.\n\n"
-                "À retenir : ne risquer que ce que vous pouvez vous permettre de perdre."
-            ),
-        ),
-        (
-            "Ordres au marché (rappel)",
-            (
-                "Un ordre au marché s’exécute au meilleur prix disponible immédiatement. "
-                "Dans Quantara, la simulation utilise des ordres au marché pour simplifier "
-                "l’apprentissage.\n\n"
-                "Comparez toujours le prix d’exécution avec le carnet (order book) sur un vrai courtier."
-            ),
-        ),
-        (
-            "Construire une routine",
-            (
-                "Avant d’ouvrir une position : définir un scénario (entrée, taille, sortie). "
-                "Tenez un journal de trades, même en simulation, pour identifier vos biais comportementaux."
-            ),
-        ),
-    ]
-    for order_index, (title, body) in enumerate(lessons_c1):
-        _ensure_lesson(session, course_id=c1.id, title=title, content=body, order_index=order_index)
-
-    # --- Course 2 ---
-    c2 = _ensure_course(
-        session,
-        title="Lecture de graphiques et timeframes",
-        description=(
-            "Lire une courbe OHLC, choisir un timeframe pertinent et éviter le bruit à court terme."
-        ),
-        level="intermediate",
-    )
-    lessons_c2 = [
-        (
-            "Bougies OHLC",
-            (
-                "Chaque bougie résume open, high, low, close sur une période. "
-                "Les graphiques de Quantara s’appuient sur des données agrégées (ex. CoinGecko)."
-            ),
-        ),
-        (
-            "Choisir un timeframe",
-            (
-                "Un horizon court (1h) montre plus de détail mais plus de bruit ; "
-                "un horizon plus long (1d) met en avant la tendance. Adaptez le timeframe à votre plan."
-            ),
-        ),
-        (
-            "Pièges fréquents",
-            (
-                "Sur-réagir aux micro-mouvements, ignorer les frais, ou sur-trader après une série de pertes. "
-                "Prenez du recul : la cohérence bat la fréquence."
-            ),
-        ),
-    ]
-    for order_index, (title, body) in enumerate(lessons_c2):
-        _ensure_lesson(session, course_id=c2.id, title=title, content=body, order_index=order_index)
-
-    # --- Course 3 ---
-    c3 = _ensure_course(
-        session,
-        title="Psychologie et gestion du capital",
-        description=(
-            "Gestion de la taille de position, discipline, et lien entre apprentissage théorique et pratique simulée."
-        ),
-        level="advanced",
-    )
-    lessons_c3 = [
-        (
-            "Taille de position",
-            (
-                "La taille relative au capital détermine l’impact d’un mouvement défavorable. "
-                "En simulation, testez plusieurs tailles pour voir l’effet sur le drawdown du portefeuille."
-            ),
-        ),
-        (
-            "Passer de la théorie à la pratique",
-            (
-                "Complétez les leçons puis exécutez de petits trades simulés pour ancrer les concepts. "
-                "Quantara relie la progression pédagogique à l’activité sur le portefeuille papier."
-            ),
-        ),
-    ]
-    for order_index, (title, body) in enumerate(lessons_c3):
-        _ensure_lesson(session, course_id=c3.id, title=title, content=body, order_index=order_index)
+    course_ids: list[int] = []
+    for spec, lessons in load_all_lessons_validated():
+        c = _ensure_course(
+            session,
+            title=spec.title,
+            description=spec.description,
+            level=spec.level,
+        )
+        course_ids.append(c.id)
+        for order_index, (title, content) in enumerate(lessons):
+            _upsert_lesson(
+                session,
+                course_id=c.id,
+                title=title,
+                content=content,
+                order_index=order_index,
+            )
+        orphan_ids = session.scalars(
+            select(Lesson.id).where(
+                Lesson.course_id == c.id,
+                Lesson.order_index >= len(lessons),
+            )
+        ).all()
+        if orphan_ids:
+            session.execute(delete(LessonProgress).where(LessonProgress.lesson_id.in_(orphan_ids)))
+            session.execute(
+                delete(Lesson).where(
+                    Lesson.course_id == c.id,
+                    Lesson.order_index >= len(lessons),
+                )
+            )
 
     session.commit()
-    print(
-        f"Education seed OK (courses: {c1.id}, {c2.id}, {c3.id}; "
-        f"lessons ensured by title/order where missing)."
-    )
+    ids_str = ", ".join(str(i) for i in course_ids)
+    print(f"Education seed OK ({len(course_ids)} courses; ids: {ids_str}).")
 
 
 def main() -> None:

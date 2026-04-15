@@ -17,6 +17,9 @@ from app.modules.market_data.schemas import AssetDetailResponse, AssetListItemRe
 
 _SIMPLE_PRICE_BATCH = 40
 
+_shared_market_data_service: MarketDataService | None = None
+_shared_service_lock = threading.Lock()
+
 
 class MarketDataService:
     """Fetches from a MarketDataProvider and returns normalized Pydantic models."""
@@ -28,11 +31,26 @@ class MarketDataService:
         )
         self._detail_lock = threading.Lock()
         self._detail_cache: dict[str, tuple[AssetDetailResponse, float]] = {}
+        self._markets_lock = threading.Lock()
+        self._markets_cache: dict[tuple[int, int], tuple[list[AssetListItemResponse], float]] = {}
+        self._ohlc_lock = threading.Lock()
+        self._ohlc_cache: dict[tuple[str, int | str, int], tuple[list[CandleResponse], float]] = {}
 
     def list_assets(self, *, limit: int = 50, page: int = 1) -> list[AssetListItemResponse]:
         """Ranked list vs USD (provider-defined ordering, typically by market cap)."""
         per_page = max(1, min(limit, 100))
         pg = max(1, page)
+        cache_key = (per_page, pg)
+        ttl = max(0.0, settings.market_data_markets_list_cache_ttl_seconds)
+        now = time.monotonic()
+        if ttl > 0:
+            with self._markets_lock:
+                hit = self._markets_cache.get(cache_key)
+                if hit is not None:
+                    cached, expires_at = hit
+                    if now < expires_at:
+                        return list(cached)
+
         try:
             raw = self._provider.fetch_markets(
                 vs_currency="usd",
@@ -46,6 +64,10 @@ class MarketDataService:
             mapped = rules.market_row_to_list_item(row)
             if mapped:
                 out.append(AssetListItemResponse.model_validate(mapped))
+
+        if ttl > 0:
+            with self._markets_lock:
+                self._markets_cache[cache_key] = (out, time.monotonic() + ttl)
         return out
 
     def get_spot_prices_usd(self, symbols: list[str]) -> dict[str, float]:
@@ -160,6 +182,19 @@ class MarketDataService:
                 detail=str(exc),
             ) from exc
 
+        ohlc_key = (coin_id, days, lim)
+        ttl = max(0.0, settings.market_data_ohlc_cache_ttl_seconds)
+        now = time.monotonic()
+        stale_candles: list[CandleResponse] | None = None
+        if ttl > 0:
+            with self._ohlc_lock:
+                hit = self._ohlc_cache.get(ohlc_key)
+                if hit is not None:
+                    cached, expires_at = hit
+                    if now < expires_at:
+                        return list(cached)
+                    stale_candles = list(cached)
+
         try:
             raw_rows = self._provider.fetch_ohlc(
                 coin_id,
@@ -167,7 +202,13 @@ class MarketDataService:
                 days=days,
             )
         except httpx.HTTPStatusError as exc:
-            _raise_http_error(exc)
+            # Graceful degradation on provider throttling:
+            # - return stale cache if available
+            status_code = exc.response.status_code if exc.response is not None else 0
+            if status_code == 429 and stale_candles is not None:
+                return stale_candles
+            else:
+                _raise_http_error(exc)
 
         candles: list[CandleResponse] = []
         for row in raw_rows:
@@ -177,6 +218,10 @@ class MarketDataService:
 
         if len(candles) > lim:
             candles = candles[-lim:]
+
+        if ttl > 0:
+            with self._ohlc_lock:
+                self._ohlc_cache[ohlc_key] = (candles, time.monotonic() + ttl)
         return candles
 
 
@@ -194,5 +239,11 @@ def _raise_http_error(exc: httpx.HTTPStatusError) -> None:
 
 
 def get_market_data_service() -> MarketDataService:
-    """FastAPI dependency factory (stateless service, default provider from settings)."""
-    return MarketDataService()
+    """
+    FastAPI dependency: one shared instance per process so in-memory caches hit across requests.
+    """
+    global _shared_market_data_service
+    with _shared_service_lock:
+        if _shared_market_data_service is None:
+            _shared_market_data_service = MarketDataService()
+        return _shared_market_data_service

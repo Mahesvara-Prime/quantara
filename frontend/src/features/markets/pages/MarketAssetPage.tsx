@@ -7,10 +7,28 @@ import { Alert } from "../../../components/ui/Alert";
 import { Spinner } from "../../../components/ui/Spinner";
 import { isApiConfigured } from "../../../shared/api";
 import { ApiHttpError } from "../../../shared/api/httpClient";
-import type { AssetDetailDto, CandleDto } from "../../../shared/api/types/backend";
+import type { AssetDetailDto, CandleDto, PositionDto } from "../../../shared/api/types/backend";
+import { getPortfolioPositions } from "../../private/services/portfolio.service";
 import { ASSET_CHART_TIMEFRAMES, type ChartTimeframeApi } from "../constants";
-import { AssetCandleChart } from "../components/AssetCandleChart";
+import { AssetCandleChart, type ChartTradingOverlay } from "../components/AssetCandleChart";
 import { getAssetCandles, getAssetDetail } from "../services/markets.service";
+
+function candleLimitForTimeframe(timeframe: ChartTimeframeApi): number {
+  switch (timeframe) {
+    case "1h":
+      return 300;
+    case "4h":
+      return 400;
+    case "1d":
+      return 500;
+    case "30d":
+      return 500;
+    case "90d":
+      return 700;
+    default:
+      return 500;
+  }
+}
 
 export function MarketAssetPage() {
   /*
@@ -30,8 +48,31 @@ export function MarketAssetPage() {
   const [candles, setCandles] = React.useState<CandleDto[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [chartWarning, setChartWarning] = React.useState<string | null>(null);
+  const [positions, setPositions] = React.useState<PositionDto[]>([]);
 
   const apiMissing = !isApiConfigured();
+
+  const tradingOverlay = React.useMemo((): ChartTradingOverlay | null => {
+    const sym = symbol.trim().toUpperCase();
+    const p = positions.find((x) => x.symbol.trim().toUpperCase() === sym);
+    if (!p || p.quantity <= 0) return null;
+    return {
+      averageEntryPrice: p.average_entry_price,
+      stopLoss: p.stop_loss ?? undefined,
+      takeProfit: p.take_profit ?? undefined,
+    };
+  }, [positions, symbol]);
+
+  React.useEffect(() => {
+    if (apiMissing) {
+      setPositions([]);
+      return;
+    }
+    getPortfolioPositions()
+      .then(setPositions)
+      .catch(() => setPositions([]));
+  }, [apiMissing, symbol]);
 
   React.useEffect(() => {
     if (apiMissing || !symbol) {
@@ -44,30 +85,46 @@ export function MarketAssetPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setChartWarning(null);
 
-    Promise.all([
-      getAssetDetail(symbol),
-      getAssetCandles(symbol, timeframe, 120),
-    ])
-      .then(([d, c]) => {
-        if (!cancelled) {
-          setDetail(d);
-          setCandles(c);
-        }
-      })
-      .catch((e) => {
-        if (cancelled) return;
+    const candleLimit = candleLimitForTimeframe(timeframe);
+    (async () => {
+      const [detailRes, candlesRes] = await Promise.allSettled([
+        getAssetDetail(symbol),
+        getAssetCandles(symbol, timeframe, candleLimit),
+      ]);
+      if (cancelled) return;
+
+      if (detailRes.status === "fulfilled") {
+        setDetail(detailRes.value);
+      } else {
         setDetail(null);
-        setCandles([]);
-        if (e instanceof ApiHttpError) {
-          setError(e.message);
+        const reason = detailRes.reason;
+        if (reason instanceof ApiHttpError) setError(reason.message);
+        else setError("Impossible de charger l’actif.");
+      }
+
+      if (candlesRes.status === "fulfilled") {
+        setCandles(candlesRes.value);
+      } else {
+        const reason = candlesRes.reason;
+        if (reason instanceof ApiHttpError) {
+          setChartWarning(
+            reason.status === 503
+              ? "Le fournisseur de marché limite temporairement les requêtes. Dernières bougies conservées."
+              : reason.message,
+          );
         } else {
-          setError("Impossible de charger l’actif.");
+          setChartWarning("Impossible de charger les bougies pour cette période.");
         }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      }
+      setLoading(false);
+    })().catch((e) => {
+      if (cancelled) return;
+      if (e instanceof ApiHttpError) setError(e.message);
+      else setError("Impossible de charger l’actif.");
+      setLoading(false);
+    });
 
     return () => {
       cancelled = true;
@@ -143,10 +200,20 @@ export function MarketAssetPage() {
         </Alert>
       ) : null}
 
+      {chartWarning && !apiMissing ? (
+        <Alert variant="info" title="Graphique">
+          {chartWarning}
+        </Alert>
+      ) : null}
+
       {/* Chart principal */}
       <Card className="p-4">
         <div className="px-2 pt-1">
-          <div className="text-sm font-semibold">CANDLESTICK CHART</div>
+          <div className="text-sm font-semibold">Graphique</div>
+          <p className="mt-1 text-xs text-[#E6EDF3]/50">
+            SMA, EMA, Bollinger, volume estimé, RSI — lignes Entrée / Stop / TP si position simulée
+            ouverte sur {symbol}.
+          </p>
         </div>
         <Divider className="my-3" />
         {loading && !apiMissing ? (
@@ -154,54 +221,28 @@ export function MarketAssetPage() {
             <Spinner /> Chargement du graphique…
           </div>
         ) : (
-          <AssetCandleChart candles={candles} />
+          <AssetCandleChart candles={candles} tradingOverlay={tradingOverlay} />
         )}
       </Card>
 
-      {/* Indicateurs mock + accès simulation (hors périmètre backend pour ce bloc) */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="p-6">
-          <h2 className="text-base font-semibold">Indicators</h2>
-          <Divider className="my-4" />
+      <Card className="p-6">
+        <h2 className="text-base font-semibold">Simulation papier</h2>
+        <Divider className="my-4" />
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-sm text-[#E6EDF3]/70">RSI</div>
-              <div className="text-sm font-semibold text-[#3B82F6]">—</div>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-sm text-[#E6EDF3]/70">MA</div>
-              <div className="text-sm font-semibold text-[#E6EDF3]">—</div>
-            </div>
-          </div>
+        <Alert variant="info" title="Ordres">
+          Passe par la page <strong className="text-[#E6EDF3]">Simulation</strong> pour acheter ou
+          vendre au prix marché ; tu peux y renseigner stop loss et take profit (affichés sur ce
+          graphique tant que la position est ouverte).
+        </Alert>
 
-          <p className="mt-4 text-xs text-[#E6EDF3]/50">
-            Indicateurs techniques : branchement ultérieur.
-          </p>
-        </Card>
-
-        <Card className="p-6">
-          <h2 className="text-base font-semibold">Trade Panel</h2>
-          <Divider className="my-4" />
-
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2">
-              <Button size="md" variant="secondary" disabled>
-                Buy
-              </Button>
-              <Button size="md" variant="secondary" disabled>
-                Sell
-              </Button>
-            </div>
-
-            <Link to="/simulation" className="inline-block">
-              <Button size="md" variant="primary" className="w-full">
-                Access Simulation
-              </Button>
-            </Link>
-          </div>
-        </Card>
-      </div>
+        <div className="mt-4">
+          <Link to={`/simulation?symbol=${encodeURIComponent(symbol)}`} className="inline-block w-full">
+            <Button size="md" variant="primary" className="w-full" type="button">
+              Ouvrir la simulation · {symbol}
+            </Button>
+          </Link>
+        </div>
+      </Card>
     </div>
   );
 }

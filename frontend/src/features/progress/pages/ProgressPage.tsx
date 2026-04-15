@@ -4,6 +4,8 @@ import { Card } from "../../../components/ui/Card";
 import { Divider } from "../../../components/ui/Divider";
 import { Alert } from "../../../components/ui/Alert";
 import { Spinner } from "../../../components/ui/Spinner";
+import { ErrorRetryBanner } from "../../../components/ui/ErrorRetryBanner";
+import { ProgressBar } from "../../../components/ui/ProgressBar";
 import { isApiConfigured } from "../../../shared/api";
 import { ApiHttpError } from "../../../shared/api/httpClient";
 import type { CourseListItemDto } from "../../../shared/api/types/backend";
@@ -30,6 +32,7 @@ function ProgressView() {
   >({});
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = React.useState(0);
 
   const apiMissing = !isApiConfigured();
 
@@ -77,7 +80,7 @@ function ProgressView() {
     return () => {
       cancelled = true;
     };
-  }, [apiMissing]);
+  }, [apiMissing, retryNonce]);
 
   const overall = global?.overall_progress ?? 0;
 
@@ -99,9 +102,11 @@ function ProgressView() {
       ) : null}
 
       {error && !apiMissing ? (
-        <Alert variant="error" title="Erreur">
-          {error}
-        </Alert>
+        <ErrorRetryBanner
+          message={error}
+          disabled={loading}
+          onRetry={() => setRetryNonce((n) => n + 1)}
+        />
       ) : null}
 
       {loading && !apiMissing ? (
@@ -113,13 +118,13 @@ function ProgressView() {
       {/* Learning — données API */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="p-6">
-          <h2 className="text-base font-semibold">Learning</h2>
+          <h2 className="text-base font-semibold">Apprentissage</h2>
           <Divider className="my-4" />
 
           {global ? (
             <div className="space-y-3 text-sm">
               <div className="flex justify-between gap-4">
-                <span className="text-[#E6EDF3]/70">Lessons completed</span>
+                <span className="text-[#E6EDF3]/70">Leçons terminées</span>
                 <span className="font-semibold">{global.total_lessons_completed}</span>
               </div>
               <div className="flex justify-between gap-4">
@@ -127,7 +132,7 @@ function ProgressView() {
                 <span className="font-semibold">{global.total_courses_completed}</span>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="text-[#E6EDF3]/70">Overall</span>
+                <span className="text-[#E6EDF3]/70">Global</span>
                 <span className="font-semibold text-[#3B82F6]">
                   {global.overall_progress.toFixed(1)}%
                 </span>
@@ -137,11 +142,8 @@ function ProgressView() {
             <p className="text-sm text-[#E6EDF3]/70">Aucune donnée.</p>
           ) : null}
 
-          <div className="mt-4 h-2 w-full rounded-full bg-white/10 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[#3B82F6]"
-              style={{ width: `${Math.min(100, Math.max(0, overall))}%` }}
-            />
+          <div className="mt-4">
+            <ProgressBar pct={overall} />
           </div>
         </Card>
 
@@ -157,7 +159,7 @@ function ProgressView() {
 
       {/* Par cours */}
       <Card className="p-6">
-        <h2 className="text-base font-semibold">Progress by course</h2>
+        <h2 className="text-base font-semibold">Par cours</h2>
         <Divider className="my-4" />
 
         {!loading && courses.length === 0 && !error ? (
@@ -183,7 +185,7 @@ function ProgressView() {
                     to={`/learn/${c.id}`}
                     className="text-xs font-medium text-[#E6EDF3]/80 underline underline-offset-2"
                   >
-                    Open
+                    Ouvrir
                   </Link>
                 </div>
               </li>
@@ -192,30 +194,20 @@ function ProgressView() {
         </ul>
       </Card>
 
-      {/* Chart placeholder */}
       <Card className="p-6">
-        <h2 className="text-base font-semibold">Performance Chart</h2>
+        <h2 className="text-base font-semibold">Trading et analyses</h2>
         <Divider className="my-4" />
-        <div className="rounded-xl border border-white/10 bg-[#111827]/20 p-4">
-          <div className="text-xs text-[#E6EDF3]/70">(placeholder — courbe temporelle non branchée)</div>
-          <svg viewBox="0 0 720 220" className="mt-3 w-full h-[120px]" aria-hidden>
-            <rect x="0" y="0" width="720" height="220" rx="14" fill="#111827" />
-            <path
-              d="M20,170 L140,155 L220,150 L330,120 L430,130 L560,90 L700,95"
-              fill="none"
-              stroke="#3B82F6"
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-          </svg>
-        </div>
-      </Card>
-
-      <Card className="p-6">
-        <h2 className="text-base font-semibold">Mistakes &amp; Insights</h2>
-        <Divider className="my-4" />
-        <p className="text-sm text-[#E6EDF3]/60">
-          Contenu analytique : à brancher sur le module Insights si besoin.
+        <p className="text-sm text-[#E6EDF3]/70">
+          L’historique de performance simulée et les insights personnalisés arriveront dans une
+          prochaine itération. En attendant, utilise{" "}
+          <Link to="/portfolio" className="font-medium text-[#3B82F6] underline underline-offset-2">
+            Portefeuille
+          </Link>{" "}
+          et{" "}
+          <Link to="/trade-history" className="font-medium text-[#3B82F6] underline underline-offset-2">
+            Historique des trades
+          </Link>{" "}
+          pour suivre tes positions et tes exécutions.
         </p>
       </Card>
     </div>

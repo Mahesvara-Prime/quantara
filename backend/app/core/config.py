@@ -22,11 +22,19 @@ class Settings(BaseSettings):
     # CoinGecko public API (no key required for basic usage; respect rate limits).
     coingecko_api_base_url: str = "https://api.coingecko.com/api/v3"
     coingecko_http_timeout_seconds: float = 15.0
-    # In-memory cache for /coins/{id} detail (reduces duplicate calls when pricing many symbols).
-    market_data_price_cache_ttl_seconds: float = 45.0
+    # In-memory caches (reduce CoinGecko public API rate limits; tune via env).
+    market_data_price_cache_ttl_seconds: float = 60.0
+    market_data_markets_list_cache_ttl_seconds: float = 60.0
+    market_data_ohlc_cache_ttl_seconds: float = 180.0
 
     # Paper trading starting balance (USD).
     simulation_initial_cash_usd: str = "100000.00"
+
+    # Password change by email — link target (SPA origin, no trailing path).
+    public_app_url: str = "http://localhost:5173"
+    # Optional Resend API (https://resend.com). If unset, confirmation links are logged only.
+    resend_api_key: str | None = None
+    resend_from_email: str = "Quantara <onboarding@resend.dev>"
 
     model_config = SettingsConfigDict(
         env_file=".env",

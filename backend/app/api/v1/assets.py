@@ -24,8 +24,8 @@ def list_assets(
 def get_asset_candles(
     symbol: str,
     service: Annotated[MarketDataService, Depends(get_market_data_service)],
-    timeframe: Annotated[str, Query(description="e.g. 1h, 1d, 30d")] = "1d",
-    limit: Annotated[int, Query(ge=1, le=500, description="Max candles returned (newest retained)")] = 100,
+    timeframe: Annotated[str, Query(description="e.g. 1h, 1d, 30d, 90d")] = "1d",
+    limit: Annotated[int, Query(ge=1, le=1000, description="Max candles returned (newest retained)")] = 100,
 ) -> list[CandleResponse]:
     """OHLC candles for charts; granularity follows the provider for the chosen window."""
     return service.get_candles(symbol, timeframe=timeframe, limit=limit)

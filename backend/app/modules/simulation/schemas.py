@@ -7,12 +7,14 @@ from pydantic import BaseModel, Field
 
 
 class CreateTradeRequest(BaseModel):
-    """POST /simulation/trades — market orders only at MVP."""
+    """POST /simulation/trades — market orders; optional SL/TP stored on buy (chart / discipline)."""
 
     symbol: str = Field(min_length=1, max_length=30)
     side: Literal["buy", "sell"]
     # Buy: USD notional to spend from cash. Sell: base-asset units to sell.
     amount: float = Field(gt=0, description="Buy: USD to spend. Sell: asset quantity to sell.")
+    stop_loss: float | None = Field(default=None, description="Buy only: stop price below entry.")
+    take_profit: float | None = Field(default=None, description="Buy only: take-profit above entry.")
 
 
 class TradeResponse(BaseModel):
@@ -26,6 +28,8 @@ class TradeResponse(BaseModel):
     amount: float
     quantity: float
     price: float
+    stop_loss: float | None = None
+    take_profit: float | None = None
     created_at: datetime
 
 
@@ -45,6 +49,8 @@ class PositionResponse(BaseModel):
     average_entry_price: float
     current_price: float
     pnl: float
+    stop_loss: float | None = None
+    take_profit: float | None = None
 
 
 class TradeHistoryItem(BaseModel):

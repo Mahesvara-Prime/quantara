@@ -29,6 +29,20 @@ def mark_lesson_completed(
     return LessonCompleteResponse()
 
 
+def unmark_lesson_completed(
+    session: Session,
+    user_id: int,
+    lesson_id: int,
+) -> LessonCompleteResponse:
+    """Undo completion (e.g. mis-click); lesson must exist in the catalog."""
+    lesson = education_repository.get_lesson_by_id(session, lesson_id)
+    if lesson is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lesson not found.")
+    progress_repository.unmark_lesson_completed(session, user_id, lesson_id)
+    session.commit()
+    return LessonCompleteResponse(status="incomplete")
+
+
 def get_course_progress(
     session: Session,
     user_id: int,

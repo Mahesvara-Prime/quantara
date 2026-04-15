@@ -2,8 +2,7 @@ import React from "react";
 import { Card } from "../../../components/ui/Card";
 
 /**
- * Conteneur standard des écrans d’auth.
- * Centralise le style (card) et la hiérarchie (titre/sous-titre) pour garder une UI cohérente.
+ * Carte standard des écrans d’auth — relief discret, hiérarchie titres.
  */
 export function AuthCard({
   title,
@@ -15,11 +14,11 @@ export function AuthCard({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="p-6 sm:p-7">
-      <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-      <p className="mt-2 text-sm text-[#E6EDF3]/70">{subtitle}</p>
-      <div className="mt-6">{children}</div>
+    <Card className="border-white/[0.09] bg-[#111827]/80 p-6 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:p-8">
+      <h1 className="text-xl font-semibold tracking-tight text-[#F9FAFB] sm:text-2xl">{title}</h1>
+      <p className="mt-2 text-sm leading-relaxed text-[#E6EDF3]/68">{subtitle}</p>
+      <div className="my-6 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      <div>{children}</div>
     </Card>
   );
 }
-

@@ -6,9 +6,11 @@ import { Input } from "../../../components/ui/Input";
 import { Button } from "../../../components/ui/Button";
 import { Alert } from "../../../components/ui/Alert";
 import { Spinner } from "../../../components/ui/Spinner";
+import { ErrorRetryBanner } from "../../../components/ui/ErrorRetryBanner";
 import { isApiConfigured } from "../../../shared/api";
 import { ApiHttpError } from "../../../shared/api/httpClient";
 import type { CourseListItemDto } from "../../../shared/api/types/backend";
+import { ProgressBar } from "../../../components/ui/ProgressBar";
 import { getCourses } from "../services/education.service";
 import { getCourseProgress } from "../../progress/services/progress.service";
 
@@ -19,17 +21,6 @@ export function LearnPage() {
   return <Learn />;
 }
 
-function ProgressBar({ pct }: { pct: number }) {
-  const safePct = Math.max(0, Math.min(100, pct));
-  return (
-    <div className="w-full">
-      <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
-        <div className="h-full rounded-full bg-[#3B82F6]" style={{ width: `${safePct}%` }} />
-      </div>
-    </div>
-  );
-}
-
 function Learn() {
   const [query, setQuery] = React.useState("");
   const [courses, setCourses] = React.useState<CourseListItemDto[]>([]);
@@ -37,6 +28,7 @@ function Learn() {
   const [progressByCourse, setProgressByCourse] = React.useState<Record<number, number>>({});
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = React.useState(0);
 
   const apiMissing = !isApiConfigured();
 
@@ -95,7 +87,7 @@ function Learn() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Learn</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Apprendre</h1>
       </div>
 
       {apiMissing ? (
@@ -106,9 +98,11 @@ function Learn() {
       ) : null}
 
       {error && !apiMissing ? (
-        <Alert variant="error" title="Erreur">
-          {error}
-        </Alert>
+        <ErrorRetryBanner
+          message={error}
+          disabled={loading}
+          onRetry={() => setRetryNonce((n) => n + 1)}
+        />
       ) : null}
 
       <div>
@@ -143,7 +137,7 @@ function Learn() {
                     <div className="mt-1 text-base font-semibold">{course.title}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-[#E6EDF3]/70">Progress</div>
+                    <div className="text-sm text-[#E6EDF3]/70">Progression</div>
                     <div className="mt-1 text-base font-semibold">{pct.toFixed(0)}%</div>
                   </div>
                 </div>
@@ -153,7 +147,7 @@ function Learn() {
 
                 <div className="mt-4">
                   <Button size="sm" variant="secondary" type="button">
-                    Open course
+                    Ouvrir le cours
                   </Button>
                 </div>
               </Card>

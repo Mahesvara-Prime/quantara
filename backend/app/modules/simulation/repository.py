@@ -89,6 +89,8 @@ def create_trade(
     amount: Decimal,
     quantity: Decimal,
     price: Decimal,
+    stop_loss: Decimal | None = None,
+    take_profit: Decimal | None = None,
 ) -> Trade:
     trade = Trade(
         portfolio_id=portfolio_id,
@@ -97,10 +99,34 @@ def create_trade(
         amount=amount,
         quantity=quantity,
         price=price,
+        stop_loss=stop_loss,
+        take_profit=take_profit,
     )
     session.add(trade)
     session.flush()
     return trade
+
+
+def get_latest_buy_brackets(
+    session: Session,
+    portfolio_id: int,
+    symbol: str,
+) -> tuple[Decimal | None, Decimal | None]:
+    """Most recent buy trade SL/TP for symbol (for chart overlays)."""
+    stmt = (
+        select(Trade.stop_loss, Trade.take_profit)
+        .where(
+            Trade.portfolio_id == portfolio_id,
+            Trade.symbol == symbol,
+            Trade.side == "buy",
+        )
+        .order_by(Trade.created_at.desc())
+        .limit(1)
+    )
+    row = session.execute(stmt).first()
+    if row is None:
+        return None, None
+    return row[0], row[1]
 
 
 def list_trades_by_portfolio(

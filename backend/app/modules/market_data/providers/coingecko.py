@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 import httpx
@@ -86,5 +87,8 @@ class CoinGeckoProvider(MarketDataProvider):
         url = f"{self._base}{path}"
         with httpx.Client(timeout=self._timeout) as client:
             response = client.get(url, params=params)
+            if response.status_code == 429:
+                time.sleep(2.0)
+                response = client.get(url, params=params)
             response.raise_for_status()
             return response.json()

@@ -5,10 +5,13 @@ import { Divider } from "../../../components/ui/Divider";
 import { Button } from "../../../components/ui/Button";
 import { Alert } from "../../../components/ui/Alert";
 import { Spinner } from "../../../components/ui/Spinner";
+import { ErrorRetryBanner } from "../../../components/ui/ErrorRetryBanner";
 import { isApiConfigured } from "../../../shared/api";
 import { ApiHttpError } from "../../../shared/api/httpClient";
 import type { CourseDetailDto, LessonDetailDto } from "../../../shared/api/types/backend";
-import { completeLesson, getCourseDetail, getLesson } from "../services/education.service";
+import { ProgressBar } from "../../../components/ui/ProgressBar";
+import { LessonMarkdown } from "../components/LessonMarkdown";
+import { completeLesson, getCourseDetail, getLesson, uncompleteLesson } from "../services/education.service";
 import { getCompletedLessonIds, getCourseProgress } from "../../progress/services/progress.service";
 
 /**
@@ -16,17 +19,6 @@ import { getCompletedLessonIds, getCourseProgress } from "../../progress/service
  */
 export function LessonPage() {
   return <LessonView />;
-}
-
-function ProgressBar({ pct }: { pct: number }) {
-  const safePct = Math.max(0, Math.min(100, pct));
-  return (
-    <div className="w-full">
-      <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
-        <div className="h-full rounded-full bg-[#3B82F6]" style={{ width: `${safePct}%` }} />
-      </div>
-    </div>
-  );
 }
 
 function LessonView() {
@@ -42,6 +34,7 @@ function LessonView() {
   const [error, setError] = React.useState<string | null>(null);
   const [completing, setCompleting] = React.useState(false);
   const [completeMsg, setCompleteMsg] = React.useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = React.useState(0);
 
   const apiMissing = !isApiConfigured();
   const idsValid =
@@ -99,7 +92,7 @@ function LessonView() {
     return () => {
       cancelled = true;
     };
-  }, [courseId, lessonId, apiMissing, idsValid, refreshProgress]);
+  }, [courseId, lessonId, apiMissing, idsValid, refreshProgress, retryNonce]);
 
   const lessonsSorted = React.useMemo(() => {
     if (!courseData) return [];
@@ -114,6 +107,44 @@ function LessonView() {
       : null;
 
   const isLessonCompleted = completedIds.has(lessonId);
+
+  const lessonStepNav = (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <Link to={`/learn/${courseId}`} className="block">
+        <Button variant="ghost" size="md" type="button" className="w-full border border-white/10">
+          ← Retour au cours
+        </Button>
+      </Link>
+      <div>
+        {prevLesson ? (
+          <Link to={`/learn/${courseId}/${prevLesson.id}`} className="block">
+            <Button size="md" variant="secondary" className="w-full" type="button">
+              Précédente
+            </Button>
+          </Link>
+        ) : (
+          <Button size="md" variant="secondary" className="w-full" type="button" disabled>
+            Précédente
+          </Button>
+        )}
+      </div>
+      <div>
+        {nextLesson ? (
+          <Link to={`/learn/${courseId}/${nextLesson.id}`} className="block">
+            <Button size="md" variant="primary" className="w-full" type="button">
+              Leçon suivante
+            </Button>
+          </Link>
+        ) : (
+          <Link to={`/learn/${courseId}`} className="block">
+            <Button size="md" variant="primary" className="w-full" type="button">
+              Retour au cours
+            </Button>
+          </Link>
+        )}
+      </div>
+    </div>
+  );
 
   async function handleComplete() {
     if (!lessonData || apiMissing) return;
@@ -134,10 +165,29 @@ function LessonView() {
     }
   }
 
+  async function handleUncomplete() {
+    if (!lessonData || apiMissing) return;
+    setCompleteMsg(null);
+    setCompleting(true);
+    try {
+      await uncompleteLesson(lessonData.id);
+      await refreshProgress();
+      setCompleteMsg("Complétion annulée — tu peux marquer la leçon à nouveau plus tard.");
+    } catch (e) {
+      if (e instanceof ApiHttpError) {
+        setCompleteMsg(e.message);
+      } else {
+        setCompleteMsg("Impossible d’annuler pour le moment.");
+      }
+    } finally {
+      setCompleting(false);
+    }
+  }
+
   if (!idsValid && !apiMissing) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold tracking-tight">Lesson</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Leçon</h1>
         <Alert variant="error" title="URL invalide">
           Identifiants cours ou leçon invalides.
         </Alert>
@@ -148,7 +198,7 @@ function LessonView() {
   if (apiMissing) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold tracking-tight">Lesson</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Leçon</h1>
         <Alert variant="error" title="API non configurée">
           Définis <code className="rounded bg-white/10 px-1">VITE_API_BASE_URL</code>.
         </Alert>
@@ -159,7 +209,7 @@ function LessonView() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold tracking-tight">Lesson</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Leçon</h1>
         <div className="inline-flex items-center gap-2 text-sm text-[#E6EDF3]/70">
           <Spinner /> Chargement…
         </div>
@@ -171,13 +221,15 @@ function LessonView() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Lesson</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Leçon</h1>
           <p className="mt-1 text-sm text-[#E6EDF3]/70">Contenu introuvable.</p>
         </div>
         {error ? (
-          <Alert variant="error" title="Erreur">
-            {error}
-          </Alert>
+          <ErrorRetryBanner
+            message={error}
+            disabled={loading}
+            onRetry={() => setRetryNonce((n) => n + 1)}
+          />
         ) : null}
         <Card className="p-6">
           <Divider className="my-4" />
@@ -190,13 +242,31 @@ function LessonView() {
   return (
     <div className="space-y-6">
       <div>
+        <nav aria-label="Fil d’Ariane" className="mb-3 text-xs text-[#E6EDF3]/55">
+          <Link to="/learn" className="transition-colors hover:text-[#E6EDF3]">
+            Apprendre
+          </Link>
+          <span className="mx-1.5 text-[#E6EDF3]/35">/</span>
+          <Link
+            to={`/learn/${courseId}`}
+            className="max-w-[min(100%,14rem)] truncate align-bottom transition-colors hover:text-[#E6EDF3] sm:max-w-[20rem] inline-block"
+            title={courseData.title}
+          >
+            {courseData.title}
+          </Link>
+          <span className="mx-1.5 text-[#E6EDF3]/35">/</span>
+          <span className="text-[#E6EDF3]/80">Leçon {currentIndex + 1}</span>
+        </nav>
+
         <h1 className="text-xl font-semibold tracking-tight">
-          Lesson {currentIndex + 1} — {lessonData.title}
+          Leçon {currentIndex + 1} — {lessonData.title}
         </h1>
         <div className="mt-2 text-sm text-[#E6EDF3]/70">
-          {courseData.title} · Progress: {progressPct.toFixed(0)}%
-          {isLessonCompleted ? " · Completed" : null}
+          {courseData.title} · Progression : {progressPct.toFixed(0)} %
+          {isLessonCompleted ? " · Terminée" : null}
         </div>
+
+        <div className="mt-4">{lessonStepNav}</div>
       </div>
 
       <Card className="p-6">
@@ -204,67 +274,55 @@ function LessonView() {
       </Card>
 
       <Card className="p-6">
-        <div className="prose prose-invert max-w-none">
-          <div className="whitespace-pre-wrap text-sm text-[#E6EDF3]/90 leading-relaxed">
-            {lessonData.content}
-          </div>
-        </div>
+        <LessonMarkdown content={lessonData.content} />
 
         <Divider className="my-6" />
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Button
-            size="md"
-            variant="primary"
-            type="button"
-            disabled={completing || isLessonCompleted}
-            onClick={handleComplete}
-          >
-            {completing ? (
-              <span className="inline-flex items-center gap-2">
-                <Spinner /> Enregistrement…
-              </span>
-            ) : isLessonCompleted ? (
-              "Completed"
-            ) : (
-              "Mark as complete"
-            )}
-          </Button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          {!isLessonCompleted ? (
+            <Button
+              size="md"
+              variant="primary"
+              type="button"
+              disabled={completing}
+              onClick={handleComplete}
+            >
+              {completing ? (
+                <span className="inline-flex items-center gap-2">
+                  <Spinner /> Enregistrement…
+                </span>
+              ) : (
+                "Marquer comme terminée"
+              )}
+            </Button>
+          ) : (
+            <Button
+              size="md"
+              variant="secondary"
+              type="button"
+              disabled={completing}
+              onClick={handleUncomplete}
+            >
+              {completing ? (
+                <span className="inline-flex items-center gap-2">
+                  <Spinner /> Mise à jour…
+                </span>
+              ) : (
+                "Annuler la complétion"
+              )}
+            </Button>
+          )}
           {completeMsg ? (
             <span className="text-sm text-[#E6EDF3]/70">{completeMsg}</span>
           ) : null}
         </div>
       </Card>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          {prevLesson ? (
-            <Link to={`/learn/${courseId}/${prevLesson.id}`}>
-              <Button size="md" variant="secondary" className="w-full">
-                Previous
-              </Button>
-            </Link>
-          ) : (
-            <Button size="md" variant="secondary" className="w-full" disabled>
-              Previous
-            </Button>
-          )}
-        </div>
-        <div>
-          {nextLesson ? (
-            <Link to={`/learn/${courseId}/${nextLesson.id}`}>
-              <Button size="md" variant="primary" className="w-full">
-                Next Lesson
-              </Button>
-            </Link>
-          ) : (
-            <Link to={`/learn/${courseId}`}>
-              <Button size="md" variant="primary" className="w-full">
-                Back to course
-              </Button>
-            </Link>
-          )}
-        </div>
+      <div className="rounded-xl border border-white/[0.08] bg-[#111827]/40 p-4">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#E6EDF3]/45">
+          Navigation
+        </p>
+        {lessonStepNav}
       </div>
     </div>
   );

@@ -45,3 +45,13 @@ def mark_lesson_completed(session: Session, user_id: int, lesson_id: int) -> Non
             row.completed = True
             row.completed_at = now
     session.flush()
+
+
+def unmark_lesson_completed(session: Session, user_id: int, lesson_id: int) -> None:
+    """Clear completion flag; idempotent if no row or already incomplete."""
+    row = get_lesson_progress(session, user_id, lesson_id)
+    if row is None:
+        return
+    row.completed = False
+    row.completed_at = None
+    session.flush()

@@ -2,7 +2,9 @@
  * Données de secours lorsque `VITE_API_BASE_URL` n'est pas défini.
  *
  * Avec une URL backend (`AuthProvider`), le login utilise POST /auth/login et le JWT ;
- * ce mock sert uniquement au mode développement sans API.
+ * l’inscription utilise POST /auth/register. Ce mock sert uniquement au mode sans API.
+ *
+ * Ne pas y mettre de vrais mots de passe : utilise des identifiants factices pour les tests locaux.
  */
 
 export type MockUser = {
@@ -18,14 +20,12 @@ export type AuthMock = {
 };
 
 export const authMock: AuthMock = {
-  // Modifiable par le dev pour tester l'accès aux pages privées.
   isAuthenticated: false,
-  // Mock user (modifier ces champs pour tester login).
   user: {
-    firstName: "Kelvin",
-    lastName: "Azur",
-    email: "apek062000@gmail.com",
-    password: "Quantara20026@",
+    firstName: "Dev",
+    lastName: "User",
+    email: "dev@example.local",
+    password: "change-me-local-only",
   },
 };
 
@@ -33,4 +33,3 @@ export const authMock: AuthMock = {
 export function setAuthenticated(isAuthenticated: boolean) {
   authMock.isAuthenticated = isAuthenticated;
 }
-

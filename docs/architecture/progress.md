@@ -108,6 +108,7 @@ Ne pas stocker CourseProgress
 
 - get_lesson_progress(user_id, lesson_id)
 - mark_lesson_completed(user_id, lesson_id)
+- unmark_lesson_completed(user_id, lesson_id)
 - list_completed_lessons(user_id)
 - count_completed_lessons(user_id)
 
@@ -131,6 +132,10 @@ Logique métier du module
 - vérifier si déjà complété
 - créer ou mettre à jour
 - enregistrer la date
+
+#### unmark_lesson_completed(user_id, lesson_id)
+
+- remettre `completed` à faux et effacer `completed_at` (annulation utilisateur)
 
 #### get_course_progress(user_id, course_id)
 
@@ -173,6 +178,10 @@ Progression d’un cours
 #### POST /lessons/{lesson_id}/complete
 
 Marquer une leçon comme complétée
+
+#### DELETE /lessons/{lesson_id}/complete
+
+Annuler la complétion (même utilisateur)
 
 ## 11. Flux logique
 

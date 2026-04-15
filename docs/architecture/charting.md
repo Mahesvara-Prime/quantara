@@ -181,12 +181,27 @@ Response
 - gestion des timeframes simples
 - format compatible graphique
 
-### Exclu
+### Frontend (fiche actif & simulation — `AssetCandleChart`)
 
-- indicateurs avancés
-- dessin utilisateur
-- annotations
+Implémenté côté client à partir des OHLC renvoyés par `GET /assets/{symbol}/candles` :
+
+- **SMA** : période réglable (off, 9, 20, 50).
+- **EMA (12)** : option activable.
+- **Bollinger (20, 2σ)** : bande haute / milieu / basse (lignes).
+- **Volume estimé** : histogramme dérivé de l’amplitude des bougies (proxy visuel, pas le volume exchange).
+- **RSI (14)** : sous-fenêtre dédiée (`rsi`).
+- **Crosshair** : O/H/L/C + indicateurs visibles sous le curseur.
+- **Lignes de trading** : si une position simulée est ouverte sur le symbole (`GET /portfolio/positions`), affichage **Entrée** (prix moyen), **Stop** et **TP** issus du dernier achat enregistré avec `stop_loss` / `take_profit` (`POST /simulation/trades`).
+- Navigation zoom / pan (molette, pincer, glisser).
+
+Les séries **ne sont pas** recalculées côté backend dans le MVP ; une évolution possible est un endpoint `charting` dédié.
+
+### Exclu (hors périmètre actuel)
+
+- dessin libre utilisateur (trendlines, Fibonacci)
+- annotations persistantes par utilisateur
 - temps réel (websocket)
+- carnet d’ordres complet sur le graphique
 
 ## 12. Interactions
 

@@ -65,6 +65,34 @@ Non
 **Module :**
 identity
 
+### POST `/auth/register`
+
+**Rôle :**
+Créer un compte utilisateur et retourner un JWT (même enveloppe que le login — connexion immédiate).
+
+**Auth :**
+Non
+
+**Body :**
+
+```json
+{
+  "first_name": "string",
+  "last_name": "string",
+  "email": "string",
+  "password": "string"
+}
+```
+
+**Réponses :**
+
+- `200` : même schéma que `POST /auth/login` (`access_token`, `token_type`, `user`).
+- `409` : email déjà enregistré.
+- `400` : validation (noms vides, email invalide, mot de passe trop court, etc.).
+
+**Module :**
+identity
+
 ### GET `/auth/me`
 
 **Rôle :**
@@ -185,7 +213,9 @@ Oui
 {
   "symbol": "string",
   "side": "buy | sell",
-  "amount": "float"
+  "amount": "float",
+  "stop_loss": "float | null (achat uniquement, sous le prix d’entrée)",
+  "take_profit": "float | null (achat uniquement, au-dessus du prix d’entrée)"
 }
 ```
 
@@ -198,7 +228,10 @@ Oui
   "side": "string",
   "amount": "float",
   "quantity": "float",
-  "price": "float"
+  "price": "float",
+  "stop_loss": "float | null",
+  "take_profit": "float | null",
+  "created_at": "datetime"
 }
 ```
 
@@ -245,10 +278,14 @@ Oui
     "quantity": "float",
     "average_entry_price": "float",
     "current_price": "float",
-    "pnl": "float"
+    "pnl": "float",
+    "stop_loss": "float | null",
+    "take_profit": "float | null"
   }
 ]
 ```
+
+(`stop_loss` / `take_profit` : dernier achat enregistré avec ces niveaux, pour affichage graphique.)
 
 **Module :**
 simulation
@@ -380,6 +417,25 @@ Oui
 ```json
 {
   "status": "completed"
+}
+```
+
+**Module :**
+progress
+
+### DELETE `/lessons/{lesson_id}/complete`
+
+**Rôle :**
+Annuler la complétion d’une leçon (ex. clic par erreur). Met `completed` à faux sur la ligne `lesson_progress` de l’utilisateur courant.
+
+**Auth :**
+Oui
+
+**Réponse :**
+
+```json
+{
+  "status": "incomplete"
 }
 ```
 

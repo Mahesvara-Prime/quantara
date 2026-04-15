@@ -27,7 +27,10 @@ export function LoginPage() {
 
   return (
     <div className="space-y-4">
-      <AuthCard title="Se connecter" subtitle="Accède à ton espace Quantara.">
+      <AuthCard
+        title="Se connecter"
+        subtitle="Accède à ton tableau de bord, aux marchés, à la simulation et aux cours."
+      >
         <LoginForm />
       </AuthCard>
       <AuthLinks mode="login" />

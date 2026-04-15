@@ -1,5 +1,6 @@
 /**
- * Catalogue et leçons — GET /courses, /courses/:id, /lessons/:id, POST /lessons/:id/complete.
+ * Catalogue et leçons — GET /courses, /courses/:id, /lessons/:id,
+ * POST /lessons/:id/complete, DELETE /lessons/:id/complete.
  */
 
 import { educationApi } from "../../../shared/api";
@@ -26,4 +27,10 @@ export async function completeLesson(
   lessonId: number,
 ): Promise<LessonCompleteResponseDto> {
   return educationApi.completeLesson(lessonId);
+}
+
+export async function uncompleteLesson(
+  lessonId: number,
+): Promise<LessonCompleteResponseDto> {
+  return educationApi.uncompleteLesson(lessonId);
 }

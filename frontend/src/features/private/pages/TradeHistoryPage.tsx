@@ -1,9 +1,11 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Card } from "../../../components/ui/Card";
 import { Divider } from "../../../components/ui/Divider";
 import { Button } from "../../../components/ui/Button";
 import { Alert } from "../../../components/ui/Alert";
 import { Spinner } from "../../../components/ui/Spinner";
+import { ErrorRetryBanner } from "../../../components/ui/ErrorRetryBanner";
 import { isApiConfigured } from "../../../shared/api";
 import { ApiHttpError } from "../../../shared/api/httpClient";
 import type { TradeHistoryItemDto } from "../../../shared/api/types/backend";
@@ -16,12 +18,13 @@ export function TradeHistoryPage() {
 type SideFilter = "all" | "buy" | "sell";
 
 /**
- * Historique des trades simulés — GET /api/v1/trades (filtre buy/sell côté client).
+ * Historique des ordres simulés — GET /trades, filtres côté client, réessai sur erreur.
  */
 function TradeHistory() {
   const [rows, setRows] = React.useState<TradeHistoryItemDto[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = React.useState(0);
   const [filter, setFilter] = React.useState<SideFilter>("all");
 
   const apiMissing = !isApiConfigured();
@@ -57,7 +60,7 @@ function TradeHistory() {
     return () => {
       cancelled = true;
     };
-  }, [apiMissing]);
+  }, [apiMissing, retryNonce]);
 
   const filtered = React.useMemo(() => {
     if (filter === "all") return rows;
@@ -66,8 +69,7 @@ function TradeHistory() {
 
   function formatDate(iso: string) {
     try {
-      const d = new Date(iso);
-      return d.toLocaleString(undefined, {
+      return new Date(iso).toLocaleString("fr-FR", {
         dateStyle: "short",
         timeStyle: "short",
       });
@@ -76,10 +78,18 @@ function TradeHistory() {
     }
   }
 
+  const sideLabel: Record<string, string> = {
+    buy: "Achat",
+    sell: "Vente",
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Trade History</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Historique des ordres</h1>
+        <p className="mt-1 text-sm text-[#E6EDF3]/60">
+          Journal de tes exécutions simulées (les plus récentes en premier).
+        </p>
       </div>
 
       {apiMissing ? (
@@ -89,16 +99,24 @@ function TradeHistory() {
         </Alert>
       ) : null}
 
+      {error && !apiMissing ? (
+        <ErrorRetryBanner
+          message={error}
+          disabled={loading}
+          onRetry={() => setRetryNonce((n) => n + 1)}
+        />
+      ) : null}
+
       <Card className="p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-[#E6EDF3]/70">Filters</div>
+          <div className="text-sm text-[#E6EDF3]/70">Filtres</div>
 
           <div className="flex flex-wrap gap-2">
             {(
               [
-                { id: "all" as const, label: "All" },
-                { id: "buy" as const, label: "Buy" },
-                { id: "sell" as const, label: "Sell" },
+                { id: "all" as const, label: "Tous" },
+                { id: "buy" as const, label: "Achats" },
+                { id: "sell" as const, label: "Ventes" },
               ] as const
             ).map((t) => (
               <Button
@@ -123,22 +141,16 @@ function TradeHistory() {
           </div>
         ) : null}
 
-        {error && !apiMissing ? (
-          <Alert variant="error" title="Erreur">
-            {error}
-          </Alert>
-        ) : null}
-
         {!loading && !error ? (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[#E6EDF3]/70">
                   <th className="py-2 pr-3">Date</th>
-                  <th className="py-2 pr-3">Symbol</th>
-                  <th className="py-2 pr-3">Side</th>
-                  <th className="py-2 pr-3">Amount</th>
-                  <th className="py-2 pr-3 text-right">Price</th>
+                  <th className="py-2 pr-3">Symbole</th>
+                  <th className="py-2 pr-3">Sens</th>
+                  <th className="py-2 pr-3">Montant</th>
+                  <th className="py-2 pr-3 text-right">Prix</th>
                 </tr>
               </thead>
               <tbody>
@@ -146,19 +158,29 @@ function TradeHistory() {
                   <tr key={`${r.created_at}-${r.symbol}-${idx}`} className="border-t border-white/10">
                     <td className="py-3 pr-3 text-[#E6EDF3]/85">{formatDate(r.created_at)}</td>
                     <td className="py-3 pr-3 font-medium">{r.symbol}</td>
-                    <td className="py-3 pr-3 capitalize">{r.side}</td>
+                    <td className="py-3 pr-3">
+                      {sideLabel[r.side.toLowerCase()] ?? r.side}
+                    </td>
                     <td className="py-3 pr-3 text-[#E6EDF3]/80">
-                      {r.amount.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+                      {r.amount.toLocaleString("fr-FR", { maximumFractionDigits: 8 })}
                     </td>
                     <td className="py-3 pr-3 text-right text-[#E6EDF3]/80">
-                      ${r.price.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+                      ${r.price.toLocaleString("fr-FR", { maximumFractionDigits: 8 })}
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && !loading ? (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-sm text-[#E6EDF3]/70">
-                      Aucun trade pour ce filtre.
+                    <td colSpan={5} className="py-8 text-center text-sm text-[#E6EDF3]/70">
+                      <p>Aucun ordre pour ce filtre.</p>
+                      {rows.length === 0 ? (
+                        <Link
+                          to="/simulation"
+                          className="mt-3 inline-block font-medium text-[#3B82F6] underline underline-offset-2"
+                        >
+                          Faire un premier ordre simulé →
+                        </Link>
+                      ) : null}
                     </td>
                   </tr>
                 ) : null}

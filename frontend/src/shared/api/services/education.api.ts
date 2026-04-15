@@ -27,3 +27,10 @@ export async function completeLesson(lessonId: number): Promise<LessonCompleteRe
     method: "POST",
   });
 }
+
+/** DELETE /lessons/{lessonId}/complete — annuler une complétion par erreur */
+export async function uncompleteLesson(lessonId: number): Promise<LessonCompleteResponseDto> {
+  return apiV1Request<LessonCompleteResponseDto>(`/lessons/${lessonId}/complete`, {
+    method: "DELETE",
+  });
+}

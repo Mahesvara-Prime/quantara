@@ -67,3 +67,17 @@ def weighted_average_entry(
 def unrealized_pnl(quantity: Decimal, average_entry_price: Decimal, current_price: Decimal) -> Decimal:
     """Mark-to-market P&L for an open position (USD)."""
     return ((current_price - average_entry_price) * quantity).quantize(USD, rounding=ROUND_DOWN)
+
+
+def validate_buy_brackets(entry_price: Decimal, stop_loss: Decimal | None, take_profit: Decimal | None) -> None:
+    """Long entry: SL strictly below entry, TP strictly above (paper trading MVP)."""
+    if stop_loss is not None:
+        if stop_loss <= 0:
+            raise ValueError("stop_loss must be positive.")
+        if stop_loss >= entry_price:
+            raise ValueError("stop_loss must be below entry price for a buy (long).")
+    if take_profit is not None:
+        if take_profit <= 0:
+            raise ValueError("take_profit must be positive.")
+        if take_profit <= entry_price:
+            raise ValueError("take_profit must be above entry price for a buy (long).")

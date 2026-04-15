@@ -7,6 +7,7 @@ import {
   getCurrentUser,
   isApiConfigured,
   loginWithBackend,
+  registerWithBackend,
   type AuthSessionUser,
 } from "./services/auth.service";
 
@@ -16,7 +17,14 @@ type AuthContextValue = {
   /** True une fois l'état initial résolu (token + /me ou mock). */
   ready: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  /** Inscription API uniquement (no-op côté mock sans backend). */
+  signUp: (firstName: string, lastName: string, email: string, password: string) => Promise<void>;
   signOut: () => void;
+  /**
+   * Recharge le profil depuis GET /auth/me (JWT actuel).
+   * No-op sans API configurée ; en cas d’échec, déconnecte comme au chargement initial.
+   */
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = React.createContext<AuthContextValue | null>(null);
@@ -67,6 +75,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const signUp = React.useCallback(
+    async (firstName: string, lastName: string, email: string, password: string) => {
+      if (!isApiConfigured()) {
+        throw new Error(
+          "Inscription via API indisponible : définis VITE_API_BASE_URL ou utilise un compte seed (python -m scripts.seed_test_user).",
+        );
+      }
+      const u = await registerWithBackend(firstName, lastName, email, password);
+      setUser(u);
+    },
+    [],
+  );
+
   const signIn = React.useCallback(async (email: string, password: string) => {
     const normalizedEmail = email.trim().toLowerCase();
     const pwd = password.trim();
@@ -97,9 +118,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const refreshUser = React.useCallback(async () => {
+    try {
+      if (!isApiConfigured()) return;
+      const token = getAccessToken();
+      if (!token) {
+        setUser(null);
+        return;
+      }
+      const u = await getCurrentUser();
+      setUser(u);
+    } catch {
+      clearBackendSession();
+      setAuthenticated(false);
+      setUser(null);
+    }
+  }, []);
+
   const value = React.useMemo(
-    () => ({ user, ready, signIn, signOut }),
-    [user, ready, signIn, signOut],
+    () => ({ user, ready, signIn, signUp, signOut, refreshUser }),
+    [user, ready, signIn, signUp, signOut, refreshUser],
   );
 
   return (

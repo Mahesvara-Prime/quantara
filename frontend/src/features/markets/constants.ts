@@ -7,6 +7,7 @@ export const ASSET_CHART_TIMEFRAMES = [
   { label: "4H", apiValue: "4h" },
   { label: "1D", apiValue: "1d" },
   { label: "30D", apiValue: "30d" },
+  { label: "90D", apiValue: "90d" },
 ] as const;
 
 export type ChartTimeframeApi = (typeof ASSET_CHART_TIMEFRAMES)[number]["apiValue"];

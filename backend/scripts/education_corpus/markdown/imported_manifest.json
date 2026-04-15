@@ -1,0 +1,214 @@
+{
+  "courses": [
+    {
+      "title": "Blockchain — blockchains-developpement-durable-divers-auteurs",
+      "description": "Texte extrait automatiquement depuis « Blockchain/blockchains-developpement-durable-divers-auteurs.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__blockchain_blockchains_developpement_durable_divers_auteurs.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Blockchain — la-blockchain---the-disruption-divers-auteurs",
+      "description": "Texte extrait automatiquement depuis « Blockchain/la-blockchain---the-disruption-divers-auteurs.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__blockchain_la_blockchain_the_disruption_divers_auteurs.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Blockchain — la-blockchain-au-service-de-la-protection-du-droit-dauteur-dans-le-domaine-du-livre-numerique-elena-deleuze",
+      "description": "Texte extrait automatiquement depuis « Blockchain/la-blockchain-au-service-de-la-protection-du-droit-dauteur-dans-le-domaine-du-livre-numerique-elena-deleuze.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__blockchain_la_blockchain_au_service_de_la_protection_du_droit_dauteur_dans_le_domaine_du_livre_numer.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Blockchain — la-blockchain-pour-les-entreprises-medef",
+      "description": "Texte extrait automatiquement depuis « Blockchain/la-blockchain-pour-les-entreprises-medef.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__blockchain_la_blockchain_pour_les_entreprises_medef.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Blockchain — la-philosophie-de-la-technologie-blockchain---ontologies-nicolae-sfetcu",
+      "description": "Texte extrait automatiquement depuis « Blockchain/la-philosophie-de-la-technologie-blockchain---ontologies-nicolae-sfetcu.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__blockchain_la_philosophie_de_la_technologie_blockchain_ontologies_nicolae_sfetcu.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Blockchain — la-technologie-blockchain---une-opportunite-pour-leconomie-sociale-marion-pignel",
+      "description": "Texte extrait automatiquement depuis « Blockchain/la-technologie-blockchain---une-opportunite-pour-leconomie-sociale-marion-pignel.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__blockchain_la_technologie_blockchain_une_opportunite_pour_leconomie_sociale_marion_pignel.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Blockchain — la-technologie-blockchain-mariana-sarmiento",
+      "description": "Texte extrait automatiquement depuis « Blockchain/la-technologie-blockchain-mariana-sarmiento.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__blockchain_la_technologie_blockchain_mariana_sarmiento.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Cryptomonnaies — blockchains-developpement-durable-kristalina-georgieva",
+      "description": "Texte extrait automatiquement depuis « Cryptomonnaies/blockchains-developpement-durable-kristalina-georgieva.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__cryptomonnaies_blockchains_developpement_durable_kristalina_georgieva.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Cryptomonnaies — compagner-la-revolution-blockchain-reglementer-les-cryptomonnaies-centre-jean-gol",
+      "description": "Texte extrait automatiquement depuis « Cryptomonnaies/compagner-la-revolution-blockchain-reglementer-les-cryptomonnaies-centre-jean-gol.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__cryptomonnaies_compagner_la_revolution_blockchain_reglementer_les_cryptomonnaies_centre_jean_gol.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Cryptomonnaies — la-philosophie-de-la-technologie-blockchain---ontologies-nicolae-sfetcu",
+      "description": "Texte extrait automatiquement depuis « Cryptomonnaies/la-philosophie-de-la-technologie-blockchain---ontologies-nicolae-sfetcu.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__cryptomonnaies_la_philosophie_de_la_technologie_blockchain_ontologies_nicolae_sfetcu.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Cryptomonnaies — les-cryptomonnaies---impasse-ou-revolution-jean-paul-pons",
+      "description": "Texte extrait automatiquement depuis « Cryptomonnaies/les-cryptomonnaies---impasse-ou-revolution-jean-paul-pons.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__cryptomonnaies_les_cryptomonnaies_impasse_ou_revolution_jean_paul_pons.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Cryptomonnaies — mastering-bitcoin-anonyme",
+      "description": "Texte extrait automatiquement depuis « Cryptomonnaies/mastering-bitcoin-anonyme.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__cryptomonnaies_mastering_bitcoin_anonyme.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Investissement — choix-dinvestissement-anonyme",
+      "description": "Texte extrait automatiquement depuis « Investissement/choix-dinvestissement-anonyme.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__investissement_choix_dinvestissement_anonyme.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Investissement — investissement-locatif-thierry-vignal",
+      "description": "Texte extrait automatiquement depuis « Investissement/investissement-locatif-thierry-vignal.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__investissement_investissement_locatif_thierry_vignal.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Investissement — les-determinants-de-linvestissement-m-joseph-kergueris",
+      "description": "Texte extrait automatiquement depuis « Investissement/les-determinants-de-linvestissement-m-joseph-kergueris.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__investissement_les_determinants_de_linvestissement_m_joseph_kergueris.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Investissement — linvestisseur-intelligent---un-livre-de-conseils-pratiques-benjamin-graham",
+      "description": "Texte extrait automatiquement depuis « Investissement/linvestisseur-intelligent---un-livre-de-conseils-pratiques-benjamin-graham.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__investissement_linvestisseur_intelligent_un_livre_de_conseils_pratiques_benjamin_graham.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Investissement — strategie-dinvestissement-en-contexte-dincertitude-divers-auteurs",
+      "description": "Texte extrait automatiquement depuis « Investissement/strategie-dinvestissement-en-contexte-dincertitude-divers-auteurs.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique. Certaines parties font moins de 10000 mots (PDF court ou texte peu extractible) ; le remplissage automatique est activé pour respecter le seuil du seed.",
+      "level": "intermediate",
+      "markdown_file": "imported__investissement_strategie_dinvestissement_en_contexte_dincertitude_divers_auteurs.md",
+      "allow_padding": true
+    },
+    {
+      "title": "Trading — analyse-technique-simplifiee-tradingcity-biz-4695",
+      "description": "Texte extrait automatiquement depuis « Trading/analyse-technique-simplifiee-tradingcity-biz-4695.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique. Certaines parties font moins de 10000 mots (PDF court ou texte peu extractible) ; le remplissage automatique est activé pour respecter le seuil du seed.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_analyse_technique_simplifiee_tradingcity_biz_4695.md",
+      "allow_padding": true
+    },
+    {
+      "title": "Trading — cours-sur-les-chandeliers-japonais-mario-lamoureux-4696",
+      "description": "Texte extrait automatiquement depuis « Trading/cours-sur-les-chandeliers-japonais-mario-lamoureux-4696.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique. Certaines parties font moins de 10000 mots (PDF court ou texte peu extractible) ; le remplissage automatique est activé pour respecter le seuil du seed.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_cours_sur_les_chandeliers_japonais_mario_lamoureux_4696.md",
+      "allow_padding": true
+    },
+    {
+      "title": "Trading — debuter-en-trading-geneva-trade-center",
+      "description": "Texte extrait automatiquement depuis « Trading/debuter-en-trading-geneva-trade-center.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique. Certaines parties font moins de 10000 mots (PDF court ou texte peu extractible) ; le remplissage automatique est activé pour respecter le seuil du seed.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_debuter_en_trading_geneva_trade_center.md",
+      "allow_padding": true
+    },
+    {
+      "title": "Trading — lanalyse-technique---investissez-pour-votre-avenir-arlequin-finance-et-tous-droits-reserves",
+      "description": "Texte extrait automatiquement depuis « Trading/lanalyse-technique---investissez-pour-votre-avenir-arlequin-finance-et-tous-droits-reserves.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique. Certaines parties font moins de 10000 mots (PDF court ou texte peu extractible) ; le remplissage automatique est activé pour respecter le seuil du seed.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_lanalyse_technique_investissez_pour_votre_avenir_arlequin_finance_et_tous_droits_reserves.md",
+      "allow_padding": true
+    },
+    {
+      "title": "Trading — le-guide-complet-de-l-analyse-technique-thierry-clement-4694",
+      "description": "Texte extrait automatiquement depuis « Trading/le-guide-complet-de-l-analyse-technique-thierry-clement-4694.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_le_guide_complet_de_l_analyse_technique_thierry_clement_4694.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Trading — le-trader-discipline-resume-complet-mark-douglas-4702",
+      "description": "Texte extrait automatiquement depuis « Trading/le-trader-discipline-resume-complet-mark-douglas-4702.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_le_trader_discipline_resume_complet_mark_douglas_4702.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Trading — les-5-phases-en-trading-cedric-froment-4699",
+      "description": "Texte extrait automatiquement depuis « Trading/les-5-phases-en-trading-cedric-froment-4699.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_les_5_phases_en_trading_cedric_froment_4699.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Trading — les-chandeliers-japonais-structures-de-renversement-apai-4697",
+      "description": "Texte extrait automatiquement depuis « Trading/les-chandeliers-japonais-structures-de-renversement-apai-4697.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique. Certaines parties font moins de 10000 mots (PDF court ou texte peu extractible) ; le remplissage automatique est activé pour respecter le seuil du seed.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_les_chandeliers_japonais_structures_de_renversement_apai_4697.md",
+      "allow_padding": true
+    },
+    {
+      "title": "Trading — psychologie-d-un-trader-rentable-hamma-toure-4703",
+      "description": "Texte extrait automatiquement depuis « Trading/psychologie-d-un-trader-rentable-hamma-toure-4703.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique. Certaines parties font moins de 10000 mots (PDF court ou texte peu extractible) ; le remplissage automatique est activé pour respecter le seuil du seed.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_psychologie_d_un_trader_rentable_hamma_toure_4703.md",
+      "allow_padding": true
+    },
+    {
+      "title": "Trading — psychologie-des-foules-gustave-le-bon-4700",
+      "description": "Texte extrait automatiquement depuis « Trading/psychologie-des-foules-gustave-le-bon-4700.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_psychologie_des_foules_gustave_le_bon_4700.md",
+      "allow_padding": false
+    },
+    {
+      "title": "Trading — psychologie-des-grands-traders-chapitre-1-thami-kabbaj-4701",
+      "description": "Texte extrait automatiquement depuis « Trading/psychologie-des-grands-traders-chapitre-1-thami-kabbaj-4701.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique. Certaines parties font moins de 10000 mots (PDF court ou texte peu extractible) ; le remplissage automatique est activé pour respecter le seuil du seed.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_psychologie_des_grands_traders_chapitre_1_thami_kabbaj_4701.md",
+      "allow_padding": true
+    },
+    {
+      "title": "Trading — strategies-de-trading-forex-ifc-markets-4698",
+      "description": "Texte extrait automatiquement depuis « Trading/strategies-de-trading-forex-ifc-markets-4698.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique. Certaines parties font moins de 10000 mots (PDF court ou texte peu extractible) ; le remplissage automatique est activé pour respecter le seuil du seed.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_strategies_de_trading_forex_ifc_markets_4698.md",
+      "allow_padding": true
+    },
+    {
+      "title": "Trading — trading-et-analyse-technique-pour-debutants-morgiver",
+      "description": "Texte extrait automatiquement depuis « Trading/trading-et-analyse-technique-pour-debutants-morgiver.pdf ». À relire, corriger et reformuler pour l’alignement pédagogique Quantara ; respecter les droits d’auteur sur la distribution publique.",
+      "level": "intermediate",
+      "markdown_file": "imported__trading_trading_et_analyse_technique_pour_debutants_morgiver.md",
+      "allow_padding": false
+    }
+  ]
+}

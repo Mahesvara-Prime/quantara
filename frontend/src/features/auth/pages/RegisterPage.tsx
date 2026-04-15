@@ -9,7 +9,7 @@ export function RegisterPage() {
     <div className="space-y-4">
       <AuthCard
         title="Créer un compte"
-        subtitle="Commence avec une interface claire et minimaliste."
+        subtitle="Rejoins Quantara pour accéder aux marchés, à la simulation papier et aux parcours de formation."
       >
         <RegisterForm />
       </AuthCard>

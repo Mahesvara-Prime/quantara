@@ -62,6 +62,18 @@ class SimulationService:
             )
 
         try:
+            sl: Decimal | None = None
+            tp: Decimal | None = None
+            if body.stop_loss is not None:
+                sl = Decimal(str(body.stop_loss))
+            if body.take_profit is not None:
+                tp = Decimal(str(body.take_profit))
+
+            if side == "buy":
+                rules.validate_buy_brackets(price, sl, tp)
+            elif sl is not None or tp is not None:
+                raise ValueError("stop_loss and take_profit are only supported on buy orders in this MVP.")
+
             if side == "buy":
                 spend_usd = raw_amt.quantize(rules.USD, rounding=ROUND_DOWN)
                 rules.validate_cash_for_buy(portfolio.cash_balance, spend_usd)
@@ -97,6 +109,8 @@ class SimulationService:
                     amount=spend_usd,
                     quantity=qty,
                     price=price,
+                    stop_loss=sl,
+                    take_profit=tp,
                 )
             else:
                 sell_qty = raw_amt.quantize(rules.QTY, rounding=ROUND_DOWN)
@@ -199,6 +213,7 @@ class SimulationService:
                     detail=f"Could not price position {pos.symbol}: {exc.detail}",
                 ) from exc
             pnl = rules.unrealized_pnl(pos.quantity, pos.average_entry_price, cur)
+            sl_b, tp_b = repository.get_latest_buy_brackets(session, portfolio.id, pos.symbol)
             rows.append(
                 PositionResponse(
                     symbol=pos.symbol,
@@ -206,6 +221,8 @@ class SimulationService:
                     average_entry_price=float(pos.average_entry_price),
                     current_price=float(cur),
                     pnl=float(pnl),
+                    stop_loss=float(sl_b) if sl_b is not None else None,
+                    take_profit=float(tp_b) if tp_b is not None else None,
                 )
             )
         return rows
@@ -234,5 +251,7 @@ class SimulationService:
             amount=float(trade.amount),
             quantity=float(trade.quantity),
             price=float(trade.price),
+            stop_loss=float(trade.stop_loss) if trade.stop_loss is not None else None,
+            take_profit=float(trade.take_profit) if trade.take_profit is not None else None,
             created_at=trade.created_at,
         )

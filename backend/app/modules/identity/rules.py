@@ -30,6 +30,43 @@ def normalize_language(code: str) -> str:
     return c
 
 
+def validate_register_input(
+    first_name: str,
+    last_name: str,
+    email: str,
+    password: str,
+) -> tuple[bool, str | None]:
+    """
+    Registration validation: non-empty names, email shape, password strength (MVP).
+
+    Returns (ok, error_message) suitable for 400 responses.
+    """
+    fn = (first_name or "").strip()
+    ln = (last_name or "").strip()
+    if not fn:
+        return False, "First name is required."
+    if not ln:
+        return False, "Last name is required."
+    if len(fn) > 100 or len(ln) > 100:
+        return False, "Name fields must be at most 100 characters."
+    ok, err = validate_login_input(email, password)
+    if not ok:
+        return False, err
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters."
+    return True, None
+
+
+def validate_email_format(email: str) -> tuple[bool, str | None]:
+    """Email shape only (no password). Returns (ok, error_message) for 400 responses."""
+    if not email or not email.strip():
+        return False, "Email is required."
+    normalized = normalize_email(email)
+    if not re.match(r"^[^@]+@[^@]+\.[^@]+$", normalized):
+        return False, "Invalid email format."
+    return True, None
+
+
 def validate_login_input(email: str, password: str) -> tuple[bool, str | None]:
     """
     Basic client-side-style validation before hitting the database.

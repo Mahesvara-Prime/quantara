@@ -5,10 +5,12 @@ import { Divider } from "../../../components/ui/Divider";
 import { Button } from "../../../components/ui/Button";
 import { Alert } from "../../../components/ui/Alert";
 import { Spinner } from "../../../components/ui/Spinner";
+import { ErrorRetryBanner } from "../../../components/ui/ErrorRetryBanner";
 import { isApiConfigured } from "../../../shared/api";
 import { ApiHttpError } from "../../../shared/api/httpClient";
 import type { CourseDetailDto } from "../../../shared/api/types/backend";
-import { getCourseDetail } from "../services/education.service";
+import { ProgressBar } from "../../../components/ui/ProgressBar";
+import { getCourseDetail, uncompleteLesson } from "../services/education.service";
 import { getCourseProgress, getCompletedLessonIds } from "../../progress/services/progress.service";
 
 /**
@@ -16,17 +18,6 @@ import { getCourseProgress, getCompletedLessonIds } from "../../progress/service
  */
 export function CourseDetailPage() {
   return <CourseDetail />;
-}
-
-function ProgressBar({ pct }: { pct: number }) {
-  const safePct = Math.max(0, Math.min(100, pct));
-  return (
-    <div className="w-full">
-      <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
-        <div className="h-full rounded-full bg-[#3B82F6]" style={{ width: `${safePct}%` }} />
-      </div>
-    </div>
-  );
 }
 
 function CourseDetail() {
@@ -38,6 +29,9 @@ function CourseDetail() {
   const [completedIds, setCompletedIds] = React.useState<Set<number>>(new Set());
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = React.useState(0);
+  const [uncompletingId, setUncompletingId] = React.useState<number | null>(null);
+  const [listMsg, setListMsg] = React.useState<string | null>(null);
 
   const apiMissing = !isApiConfigured();
   const idValid = Number.isFinite(courseId) && courseId > 0;
@@ -77,7 +71,40 @@ function CourseDetail() {
     return () => {
       cancelled = true;
     };
-  }, [courseId, apiMissing, idValid]);
+  }, [courseId, apiMissing, idValid, retryNonce]);
+
+  async function refreshLessonProgress() {
+    if (apiMissing || !idValid) return;
+    try {
+      const [prog, ids] = await Promise.all([
+        getCourseProgress(courseId),
+        getCompletedLessonIds(),
+      ]);
+      setProgressPct(prog.progress_percent);
+      setCompletedIds(new Set(ids));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function handleUncompleteLesson(lessonId: number) {
+    if (apiMissing) return;
+    setListMsg(null);
+    setUncompletingId(lessonId);
+    try {
+      await uncompleteLesson(lessonId);
+      await refreshLessonProgress();
+      setListMsg("Statut « terminé » retiré pour cette leçon.");
+    } catch (e) {
+      if (e instanceof ApiHttpError) {
+        setListMsg(e.message);
+      } else {
+        setListMsg("Impossible de mettre à jour le statut.");
+      }
+    } finally {
+      setUncompletingId(null);
+    }
+  }
 
   const lessonsSorted = React.useMemo(() => {
     if (!detail) return [];
@@ -94,7 +121,7 @@ function CourseDetail() {
   if (!idValid && !apiMissing) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold tracking-tight">Course Detail</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Cours</h1>
         <Alert variant="error" title="URL invalide">
           Identifiant de cours invalide.
         </Alert>
@@ -105,7 +132,7 @@ function CourseDetail() {
   if (apiMissing) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold tracking-tight">Course Detail</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Cours</h1>
         <Alert variant="error" title="API non configurée">
           Définis <code className="rounded bg-white/10 px-1">VITE_API_BASE_URL</code>.
         </Alert>
@@ -116,7 +143,7 @@ function CourseDetail() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-xl font-semibold tracking-tight">Course Detail</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Cours</h1>
         <div className="inline-flex items-center gap-2 text-sm text-[#E6EDF3]/70">
           <Spinner /> Chargement…
         </div>
@@ -128,13 +155,15 @@ function CourseDetail() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Course Detail</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Cours</h1>
           <p className="mt-1 text-sm text-[#E6EDF3]/70">Cours introuvable ou erreur.</p>
         </div>
         {error ? (
-          <Alert variant="error" title="Erreur">
-            {error}
-          </Alert>
+          <ErrorRetryBanner
+            message={error}
+            disabled={loading}
+            onRetry={() => setRetryNonce((n) => n + 1)}
+          />
         ) : null}
         <Card className="p-6">
           <Divider className="my-4" />
@@ -147,12 +176,32 @@ function CourseDetail() {
   return (
     <div className="space-y-6">
       <div>
+        <nav aria-label="Fil d’Ariane" className="mb-3 text-xs text-[#E6EDF3]/55">
+          <Link to="/learn" className="transition-colors hover:text-[#E6EDF3]">
+            Apprendre
+          </Link>
+          <span className="mx-1.5 text-[#E6EDF3]/35">/</span>
+          <span className="inline-block max-w-[min(100%,14rem)] truncate align-bottom text-[#E6EDF3]/80 sm:max-w-[24rem]" title={detail.title}>
+            {detail.title}
+          </span>
+        </nav>
+
+        <div className="mb-4">
+          <Link to="/learn" className="inline-block">
+            <Button variant="ghost" size="md" type="button" className="border border-white/10">
+              ← Retour à tous les cours
+            </Button>
+          </Link>
+        </div>
+
         <h1 className="text-xl font-semibold tracking-tight">{detail.title}</h1>
         <div className="mt-2 text-sm text-[#E6EDF3]/70">
-          {detail.level} • {lessonsSorted.length} lessons
+          {detail.level} • {lessonsSorted.length} leçon{lessonsSorted.length !== 1 ? "s" : ""}
         </div>
         <p className="mt-3 text-sm text-[#E6EDF3]/80 whitespace-pre-wrap">{detail.description}</p>
-        <div className="mt-2 text-sm text-[#E6EDF3]/70">Progress: {progressPct.toFixed(0)}%</div>
+        <div className="mt-2 text-sm text-[#E6EDF3]/70">
+          Progression : {progressPct.toFixed(0)} %
+        </div>
       </div>
 
       <Card className="p-6">
@@ -160,29 +209,56 @@ function CourseDetail() {
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-base font-semibold">Lessons</h2>
+        <h2 className="text-base font-semibold">Leçons</h2>
         <Divider className="my-4" />
+
+        {listMsg ? (
+          <p className="mb-3 text-xs text-[#E6EDF3]/65" role="status">
+            {listMsg}
+          </p>
+        ) : null}
 
         <div className="divide-y divide-white/10">
           {lessonsSorted.map((lesson, idx) => {
             const done = completedIds.has(lesson.id);
+            const busy = uncompletingId === lesson.id;
             return (
-              <div key={lesson.id} className="flex items-center justify-between gap-4 py-2">
-                <div className="min-w-0">
+              <div key={lesson.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium truncate">
-                    Lesson {idx + 1} — {lesson.title}
+                    Leçon {idx + 1} — {lesson.title}
                   </div>
                   {done ? (
-                    <div className="mt-1 text-xs text-[#22C55E]">Completed</div>
+                    <div className="mt-1 text-xs text-[#22C55E]">Terminée</div>
                   ) : (
-                    <div className="mt-1 text-xs text-[#E6EDF3]/60">Not completed</div>
+                    <div className="mt-1 text-xs text-[#E6EDF3]/60">Non terminée</div>
                   )}
                 </div>
-                <Link to={`/learn/${courseId}/${lesson.id}`} className="shrink-0">
-                  <Button size="sm" variant={done ? "secondary" : "primary"}>
-                    Open
-                  </Button>
-                </Link>
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  {done ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      type="button"
+                      disabled={busy}
+                      onClick={() => handleUncompleteLesson(lesson.id)}
+                      title="Si tu as marqué terminé par erreur"
+                    >
+                      {busy ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Spinner /> …
+                        </span>
+                      ) : (
+                        "Retirer « terminé »"
+                      )}
+                    </Button>
+                  ) : null}
+                  <Link to={`/learn/${courseId}/${lesson.id}`}>
+                    <Button size="sm" variant={done ? "secondary" : "primary"} type="button">
+                      Ouvrir
+                    </Button>
+                  </Link>
+                </div>
               </div>
             );
           })}
@@ -192,7 +268,7 @@ function CourseDetail() {
           <div className="mt-6">
             <Link to={`/learn/${courseId}/${nextLesson.id}`}>
               <Button size="md" variant="primary" className="w-full">
-                Continue Learning
+                Continuer
               </Button>
             </Link>
           </div>

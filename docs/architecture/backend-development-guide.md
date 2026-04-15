@@ -426,6 +426,7 @@ Le backend doit être implémenté dans cet ordre :
 ### Bloc 3 — Identity
 
 - user
+- register (`POST /auth/register`)
 - login
 - auth/me
 - auth dependencies
@@ -480,6 +481,7 @@ Chaque bloc doit produire quelque chose de testable.
 
 ### Après bloc 3
 
+- inscription (`POST /auth/register`) crée un utilisateur et retourne un JWT
 - login fonctionne
 - `/auth/me` fonctionne
 

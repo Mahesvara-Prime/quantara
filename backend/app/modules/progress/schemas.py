@@ -6,9 +6,9 @@ from pydantic import BaseModel, Field
 
 
 class LessonCompleteResponse(BaseModel):
-    """POST /lessons/{id}/complete."""
+    """POST /lessons/{id}/complete — ou DELETE pour annuler."""
 
-    status: Literal["completed"] = "completed"
+    status: Literal["completed", "incomplete"] = "completed"
 
 
 class CourseProgressResponse(BaseModel):

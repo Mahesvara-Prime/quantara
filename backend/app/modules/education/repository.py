@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import case, select
 from sqlalchemy.orm import Session
 
 from app.modules.education.models import Course, Lesson
 
 
 def list_courses(session: Session) -> list[Course]:
-    stmt = select(Course).order_by(Course.id.asc())
+    level_order = case(
+        (Course.level == "beginner", 0),
+        (Course.level == "intermediate", 1),
+        (Course.level == "advanced", 2),
+        else_=3,
+    )
+    stmt = select(Course).order_by(level_order.asc(), Course.id.asc())
     return list(session.scalars(stmt).all())
 
 

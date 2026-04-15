@@ -101,6 +101,17 @@ Définir les schémas Pydantic (API).
 }
 ```
 
+#### RegisterRequest
+
+```json
+{
+  "first_name": "string",
+  "last_name": "string",
+  "email": "string",
+  "password": "string"
+}
+```
+
 #### UserResponse
 
 ```json
@@ -132,7 +143,7 @@ Accès aux données utilisateur.
 
 - `get_user_by_email(db, email)`
 - `get_user_by_id(db, user_id)`
-- `create_user(db, data)` (optionnel)
+- `create_user(db, …)` — inscription (`POST /auth/register`)
 
 ### Important
 
@@ -181,6 +192,13 @@ Base :
 ```
 
 ### Endpoints MVP
+
+#### POST /auth/register
+
+Création de compte (prénom, nom, email, mot de passe ≥ 8 caractères). Réponse identique à login : JWT + objet `user` (connexion immédiate).
+
+- Email déjà utilisé → `409 Conflict`.
+- Données invalides → `400` avec message explicite.
 
 #### POST /auth/login
 
@@ -234,13 +252,13 @@ Utilisées dans :
 ### Inclus
 
 - User model
+- **Inscription** `POST /auth/register` (hash bcrypt, email unique, JWT retourné)
 - Login
 - Token simple
 - Auth protégée
 
 ### Exclu (plus tard)
 
-- register complet
 - social login
 - MFA
 - refresh tokens

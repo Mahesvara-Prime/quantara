@@ -12,7 +12,8 @@ PUBLIC
 │   └── → Dashboard (success)
 │
 ├── Register (/register)
-│   └── → Dashboard (success)
+│   └── → Dashboard (succès) — `POST /api/v1/auth/register` si `VITE_API_BASE_URL` défini ;
+│       sinon message invitant à configurer l’API ou à utiliser un compte seed.
 │
 ├── Forgot Password (/forgot-password)
 │   └── Reset Password (/reset-password)

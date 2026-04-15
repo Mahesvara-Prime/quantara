@@ -223,9 +223,26 @@ Response
 - liste des leçons
 - contenu des leçons
 
+### Pédagogie cible (contenu seed)
+
+Le script `backend/scripts/seed_education.py` enrichit le catalogue de façon **idempotente** (titres + `order_index` uniques par cours) :
+
+- **Quinze parcours** statiques (`fr_course_01.md` … `fr_course_15.md`) + **cours additionnels issus de PDF** listés dans `markdown/imported_manifest.json` après import.
+- **Seuil de longueur** : chaque leçon doit compter **au moins 10 000 mots** au moment du seed. Les fichiers Markdown courts sont **complétés automatiquement** (banque de paragraphes pédagogiques) sauf les cours PDF (`allow_padding: false` dans le manifeste) où le texte doit déjà atteindre le seuil.
+- **PDF** : déposer les `.pdf` dans `backend/scripts/education_corpus/source_pdfs/`, puis `python -m scripts.education_corpus.import_pdfs` (voir `source_pdfs/README.md`). Relancer ensuite `python -m scripts.seed_education`.
+- **Regénérer** les cours `fr_course_02` … `fr_course_15` à partir des titres modulaires : `python scripts/education_corpus/build_markdown_courses.py`.
+- Le corps des leçons est au format **Markdown** ; le frontend le rend sans afficher la syntaxe brute.
+- **`_upsert_lesson`** : ré-exécuter le seed **met à jour** titre + contenu. Les leçons dont l’`order_index` dépasse le nouveau catalogue sont supprimées avec leur `lesson_progress` associé.
+
+Relancer après déploiement ou changement éditorial :
+
+```bash
+cd backend && python -m scripts.seed_education
+```
+
 ### Exclu
 
-- quiz
+- quiz notés automatiquement
 - certification
 - parcours adaptatif
 - CMS admin
@@ -250,7 +267,8 @@ Le module interagit avec :
 
 ### Lesson page
 
-- contenu
+- contenu Markdown rendu (titres, paragraphes, listes)
+- complétion `POST …/complete` et annulation `DELETE …/complete`
 
 ## 15. À éviter
 

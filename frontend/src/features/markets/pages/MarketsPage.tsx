@@ -5,145 +5,13 @@ import { Input } from "../../../components/ui/Input";
 import { Divider } from "../../../components/ui/Divider";
 import { Button } from "../../../components/ui/Button";
 import { Alert } from "../../../components/ui/Alert";
+import { ErrorRetryBanner } from "../../../components/ui/ErrorRetryBanner";
 import { Spinner } from "../../../components/ui/Spinner";
 import { isApiConfigured } from "../../../shared/api";
 import { ApiHttpError } from "../../../shared/api/httpClient";
 import type { AssetListItemDto } from "../../../shared/api/types/backend";
 import { listAssets } from "../services/markets.service";
-
-/** Hash déterministe pour bruit reproductible par symbole. */
-function hashSymbol(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return Math.abs(h);
-}
-
-function pseudo01(i: number, seed: number): number {
-  const x = Math.sin(i * 12.9898 + seed * 0.001) * 43758.5453;
-  return x - Math.floor(x);
-}
-
-/**
- * Série synthétique cohérente avec le prix affiché et la variation % 24h (liste API sans historique).
- * Début ≈ prix / (1+r), fin = prix courant, micro-volatilité le long du chemin.
- */
-function marketSparklinePoints(price: number, changePercent: number, symbol: string): number[] {
-  const n = 22;
-  const seed = hashSymbol(symbol);
-  let r = changePercent / 100;
-  if (Math.abs(r) < 1e-8) {
-    r = changePercent >= 0 ? 1e-5 : -1e-5;
-  }
-  const clampedR = Math.max(-0.8, Math.min(0.8, r));
-  const startPrice = price / (1 + clampedR);
-  const volScale = Math.min(6, Math.abs(changePercent));
-  const points: number[] = [];
-
-  for (let i = 0; i < n; i++) {
-    const t = i / (n - 1);
-    if (i === 0) {
-      points.push(startPrice);
-      continue;
-    }
-    if (i === n - 1) {
-      points.push(price);
-      continue;
-    }
-    const linear = startPrice + (price - startPrice) * t;
-    const cycles = 2 + (seed % 5);
-    const envelope = Math.sin(Math.PI * t) * 0.45 + 0.55;
-    const wiggle =
-      Math.abs(price) *
-      0.01 *
-      (1 + volScale / 12) *
-      envelope *
-      (Math.sin(t * Math.PI * cycles + seed * 0.02) * 0.55 +
-        (pseudo01(i, seed) - 0.45) * 0.9);
-    points.push(linear + wiggle);
-  }
-
-  return points;
-}
-
-function linePath(points: number[], w: number, h: number): string {
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const range = max - min || Math.abs(max) * 1e-8 || 1;
-  const pad = range * 0.08;
-  const lo = min - pad;
-  const hi = max + pad;
-  const span = hi - lo;
-  const denom = Math.max(1, points.length - 1);
-  return points
-    .map((p, i) => {
-      const x = (i / denom) * w;
-      const y = h - ((p - lo) / span) * h;
-      return `${i === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(" ");
-}
-
-/**
- * Mini sparkline : tendance alignée sur la variation % (vert / rouge).
- */
-function Sparkline({
-  points,
-  uid,
-  up,
-}: {
-  points: number[];
-  uid: string;
-  up: boolean;
-}) {
-  const w = 80;
-  const h = 28;
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const range = max - min || Math.abs(max) * 1e-8 || 1;
-  const pad = range * 0.08;
-  const lo = min - pad;
-  const hi = max + pad;
-  const span = hi - lo;
-  const denom = Math.max(1, points.length - 1);
-
-  const lineD = linePath(points, w, h);
-  const lastY = h - ((points[points.length - 1] - lo) / span) * h;
-  const areaD = `${lineD} L ${w},${h} L 0,${h} Z`;
-
-  const stroke = up ? "#22C55E" : "#F87171";
-  const fillId = `sparkFill-${uid}`;
-
-  return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      width={w}
-      height={h}
-      className="shrink-0"
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={stroke} stopOpacity="0.22" />
-          <stop offset="1" stopColor={stroke} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={areaD} fill={`url(#${fillId})`} />
-      <path
-        d={lineD}
-        fill="none"
-        stroke={stroke}
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity={0.95}
-      />
-      <circle cx={w} cy={lastY} r="2.25" fill={stroke} opacity={0.95} />
-    </svg>
-  );
-}
+import { MarketMiniSparkline, marketSparklinePoints } from "../utils/sparkline";
 
 export function MarketsPage() {
   /*
@@ -156,6 +24,7 @@ export function MarketsPage() {
   const [assets, setAssets] = React.useState<AssetListItemDto[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = React.useState(0);
 
   React.useEffect(() => {
     if (!isApiConfigured()) {
@@ -189,7 +58,7 @@ export function MarketsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [retryNonce]);
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -205,7 +74,10 @@ export function MarketsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Markets</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Marchés</h1>
+        <p className="mt-1 text-sm text-[#E6EDF3]/60">
+          Cotations et variations 24h — clique sur un actif pour le graphique détaillé.
+        </p>
       </div>
 
       {apiMissing ? (
@@ -216,14 +88,21 @@ export function MarketsPage() {
         </Alert>
       ) : null}
 
-      {/* Search (wireframe: "Search [ BTC, ETH... ]") */}
+      {error && !apiMissing ? (
+        <ErrorRetryBanner
+          message={error}
+          disabled={loading}
+          onRetry={() => setRetryNonce((n) => n + 1)}
+        />
+      ) : null}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1">
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search assets..."
-            aria-label="Search assets"
+            placeholder="Rechercher un actif…"
+            aria-label="Rechercher un actif"
             disabled={apiMissing}
           />
         </div>
@@ -245,10 +124,9 @@ export function MarketsPage() {
         </div>
       </div>
 
-      {/* Asset list card */}
       <Card className="p-6">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base font-semibold">Asset List</h2>
+          <h2 className="text-base font-semibold">Liste des actifs</h2>
           {loading ? (
             <span className="inline-flex items-center gap-2 text-sm text-[#E6EDF3]/70">
               <Spinner /> Chargement…
@@ -256,12 +134,6 @@ export function MarketsPage() {
           ) : null}
         </div>
         <Divider className="my-4" />
-
-        {error && !apiMissing ? (
-          <Alert variant="error" title="Erreur">
-            {error}
-          </Alert>
-        ) : null}
 
         {!loading && !error && !apiMissing && filtered.length === 0 ? (
           <p className="text-sm text-[#E6EDF3]/70">Aucun actif ne correspond à ta recherche.</p>
@@ -299,7 +171,7 @@ export function MarketsPage() {
                       {asset.change_percent.toFixed(2)}%
                     </div>
                     <div className="ml-auto flex w-20 shrink-0 items-center justify-end sm:ml-0">
-                      <Sparkline
+                      <MarketMiniSparkline
                         uid={asset.symbol}
                         up={isPositive}
                         points={marketSparklinePoints(

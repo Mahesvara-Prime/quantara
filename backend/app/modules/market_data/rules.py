@@ -44,7 +44,7 @@ def resolve_coingecko_id(symbol: str) -> str | None:
     return SYMBOL_TO_COINGECKO_ID.get(key)
 
 
-def validate_timeframe(timeframe: str) -> tuple[str, int]:
+def validate_timeframe(timeframe: str) -> tuple[str, int | str]:
     """
     Map API timeframe labels to CoinGecko OHLC `days` parameter.
 
@@ -53,7 +53,7 @@ def validate_timeframe(timeframe: str) -> tuple[str, int]:
     Returns (canonical_timeframe, days).
     """
     tf = timeframe.strip().lower()
-    allowed: dict[str, tuple[str, int]] = {
+    allowed: dict[str, tuple[str, int | str]] = {
         "1h": ("1h", 1),
         "4h": ("4h", 7),
         "1d": ("1d", 30),
@@ -67,7 +67,7 @@ def validate_timeframe(timeframe: str) -> tuple[str, int]:
     return allowed[tf]
 
 
-def clamp_limit(limit: int, *, max_candles: int = 500) -> int:
+def clamp_limit(limit: int, *, max_candles: int = 1000) -> int:
     """Keep candle count within sensible bounds."""
     if limit < 1:
         raise ValueError("limit must be at least 1")

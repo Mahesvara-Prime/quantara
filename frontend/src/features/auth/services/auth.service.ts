@@ -29,6 +29,13 @@ export class AuthInvalidCredentialsError extends Error {
   }
 }
 
+export class AuthEmailAlreadyUsedError extends Error {
+  constructor(message = "Un compte existe déjà avec cet email.") {
+    super(message);
+    this.name = "AuthEmailAlreadyUsedError";
+  }
+}
+
 export function mapProfileToSession(dto: UserProfileDto): AuthSessionUser {
   return {
     id: dto.id,
@@ -39,6 +46,36 @@ export function mapProfileToSession(dto: UserProfileDto): AuthSessionUser {
 }
 
 /** Connexion backend : stocke le JWT et retourne le profil embarqué dans la réponse. */
+/** Inscription : crée le compte, stocke le JWT, retourne le profil (même flux que login). */
+export async function registerWithBackend(
+  firstName: string,
+  lastName: string,
+  email: string,
+  password: string,
+): Promise<AuthSessionUser> {
+  try {
+    const res = await authApi.register({
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      email: email.trim(),
+      password,
+    });
+    setAccessToken(res.access_token);
+    return mapProfileToSession(res.user);
+  } catch (e) {
+    if (e instanceof ApiHttpError && e.status === 409) {
+      throw new AuthEmailAlreadyUsedError(e.message);
+    }
+    if (
+      e instanceof ApiHttpError &&
+      (e.status === 400 || e.status === 401 || e.status === 403 || e.status === 422)
+    ) {
+      throw new Error(e.message);
+    }
+    throw e;
+  }
+}
+
 export async function loginWithBackend(
   email: string,
   password: string,
@@ -65,6 +102,50 @@ export async function loginWithBackend(
 export async function getCurrentUser(): Promise<AuthSessionUser> {
   const me = await authApi.getMe();
   return mapProfileToSession(me);
+}
+
+export async function requestPasswordChange(
+  currentPassword: string,
+  newPassword: string,
+  newPasswordConfirm: string,
+): Promise<string> {
+  const res = await authApi.requestPasswordChange({
+    current_password: currentPassword,
+    new_password: newPassword,
+    new_password_confirm: newPasswordConfirm,
+  });
+  return res.message;
+}
+
+export async function confirmPasswordChange(
+  token: string,
+  newPassword: string,
+  newPasswordConfirm: string,
+): Promise<string> {
+  const res = await authApi.confirmPasswordChange({
+    token: token.trim(),
+    new_password: newPassword,
+    new_password_confirm: newPasswordConfirm,
+  });
+  return res.message;
+}
+
+export async function requestPasswordReset(email: string): Promise<string> {
+  const res = await authApi.requestPasswordReset({ email: email.trim().toLowerCase() });
+  return res.message;
+}
+
+export async function confirmPasswordReset(
+  token: string,
+  newPassword: string,
+  newPasswordConfirm: string,
+): Promise<string> {
+  const res = await authApi.confirmPasswordReset({
+    token: token.trim(),
+    new_password: newPassword,
+    new_password_confirm: newPasswordConfirm,
+  });
+  return res.message;
 }
 
 export function clearBackendSession(): void {

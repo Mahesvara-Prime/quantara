@@ -1,9 +1,12 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Card } from "../../../components/ui/Card";
 import { Button } from "../../../components/ui/Button";
 import { Divider } from "../../../components/ui/Divider";
 import { Alert } from "../../../components/ui/Alert";
 import { Spinner } from "../../../components/ui/Spinner";
+import { ErrorRetryBanner } from "../../../components/ui/ErrorRetryBanner";
+import { useToast } from "../../../components/feedback/ToastContext";
 import { isApiConfigured } from "../../../shared/api";
 import { ApiHttpError } from "../../../shared/api/httpClient";
 import type { PortfolioSummaryDto, PositionDto } from "../../../shared/api/types/backend";
@@ -15,15 +18,16 @@ export function PortfolioPage() {
 }
 
 /**
- * Portfolio — résumé cash / valeur / P&amp;L et positions ouvertes (backend).
+ * Portefeuille simulé — résumé, positions, fermeture avec toast.
  */
 function Portfolio() {
+  const { showToast } = useToast();
   const [summary, setSummary] = React.useState<PortfolioSummaryDto | null>(null);
   const [positions, setPositions] = React.useState<PositionDto[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = React.useState(0);
   const [closingSymbol, setClosingSymbol] = React.useState<string | null>(null);
-  const [tradeMessage, setTradeMessage] = React.useState<string | null>(null);
 
   const apiMissing = !isApiConfigured();
 
@@ -34,26 +38,23 @@ function Portfolio() {
   }
 
   async function closePosition(symbol: string, quantity: number) {
-    setTradeMessage(null);
     setClosingSymbol(symbol);
     try {
       await executeTrade({ symbol, side: "sell", amount: quantity });
       setError(null);
-      setTradeMessage(`Position ${symbol} fermée (vente totale).`);
+      showToast(`Position ${symbol} fermée.`, "success");
       try {
         await refreshPortfolio();
       } catch {
-        setTradeMessage(
-          `Position ${symbol} vendue. Actualise la page si le solde ne se met pas à jour.`,
-        );
+        showToast("Vente enregistrée. Actualise la page si les chiffres ne bougent pas.", "info");
       }
     } catch (e) {
       if (e instanceof ApiHttpError) {
-        setTradeMessage(null);
         setError(e.message);
+        showToast(e.message, "error");
       } else {
-        setTradeMessage(null);
         setError("Impossible de fermer la position.");
+        showToast("Échec de la fermeture.", "error");
       }
     } finally {
       setClosingSymbol(null);
@@ -77,7 +78,6 @@ function Portfolio() {
         if (!cancelled) {
           setSummary(s);
           setPositions(p);
-          setTradeMessage(null);
         }
       })
       .catch((e) => {
@@ -87,7 +87,7 @@ function Portfolio() {
         if (e instanceof ApiHttpError) {
           setError(e.message);
         } else {
-          setError("Impossible de charger le portfolio.");
+          setError("Impossible de charger le portefeuille.");
         }
       })
       .finally(() => {
@@ -97,7 +97,7 @@ function Portfolio() {
     return () => {
       cancelled = true;
     };
-  }, [apiMissing]);
+  }, [apiMissing, retryNonce]);
 
   const profitColor =
     summary != null && summary.total_pnl >= 0 ? "#22C55E" : "#EF4444";
@@ -105,23 +105,30 @@ function Portfolio() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Portfolio</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Portefeuille</h1>
+        <p className="mt-1 text-sm text-[#E6EDF3]/60">
+          Simulation papier : soldes et positions ouvertes.
+        </p>
       </div>
 
       {apiMissing ? (
         <Alert variant="error" title="API non configurée">
           Définis <code className="rounded bg-white/10 px-1">VITE_API_BASE_URL</code> pour afficher le
-          portfolio simulé.
+          portefeuille simulé.
         </Alert>
       ) : null}
 
       {error && !apiMissing ? (
-        <Alert variant="error" title="Erreur">
-          {error}
-        </Alert>
+        <ErrorRetryBanner
+          message={error}
+          disabled={loading}
+          onRetry={() => {
+            setError(null);
+            setRetryNonce((n) => n + 1);
+          }}
+        />
       ) : null}
 
-      {/* Stats — alignées sur GET /portfolio */}
       <Card className="p-6">
         <div className="flex flex-col gap-4">
           {loading && !apiMissing ? (
@@ -134,22 +141,22 @@ function Portfolio() {
             <>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
                 <div>
-                  <div className="text-sm text-[#E6EDF3]/70">Total value</div>
+                  <div className="text-sm text-[#E6EDF3]/70">Valeur totale</div>
                   <div className="text-lg font-semibold text-[#E6EDF3]">
-                    ${summary.total_value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    ${summary.total_value.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-[#E6EDF3]/70">Cash</div>
                   <div className="text-lg font-semibold text-[#E6EDF3]">
-                    ${summary.cash_balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    ${summary.cash_balance.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm text-[#E6EDF3]/70">Total P/L</div>
+                  <div className="text-sm text-[#E6EDF3]/70">P / L total</div>
                   <div className="text-lg font-semibold" style={{ color: profitColor }}>
                     {summary.total_pnl >= 0 ? "+" : ""}
-                    ${summary.total_pnl.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    ${summary.total_pnl.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
@@ -157,18 +164,25 @@ function Portfolio() {
           ) : null}
 
           {!loading && !summary && !error && !apiMissing ? (
-            <p className="text-sm text-[#E6EDF3]/70">Aucune donnée portfolio.</p>
+            <p className="text-sm text-[#E6EDF3]/70">Aucune donnée portefeuille.</p>
           ) : null}
         </div>
       </Card>
 
-      {/* Open Positions */}
       <Card className="p-6">
-        <h2 className="text-base font-semibold">Open Positions</h2>
+        <h2 className="text-base font-semibold">Positions ouvertes</h2>
         <Divider className="my-4" />
 
         {!loading && positions.length === 0 && !error && !apiMissing ? (
-          <p className="text-sm text-[#E6EDF3]/70">Aucune position ouverte.</p>
+          <div className="space-y-3 text-sm text-[#E6EDF3]/70">
+            <p>Tu n’as pas encore de position ouverte.</p>
+            <Link
+              to="/simulation"
+              className="inline-block font-medium text-[#3B82F6] underline underline-offset-2"
+            >
+              Passer un ordre simulé →
+            </Link>
+          </div>
         ) : null}
 
         <div className="space-y-2">
@@ -186,16 +200,16 @@ function Portfolio() {
               >
                 <div className="min-w-[72px] text-sm font-semibold">{p.symbol}</div>
                 <div className="text-sm text-[#E6EDF3]/70">
-                  Qty {p.quantity.toLocaleString(undefined, { maximumFractionDigits: 8 })}
+                  Qté {p.quantity.toLocaleString("fr-FR", { maximumFractionDigits: 8 })}
                 </div>
                 <div className="text-sm text-[#E6EDF3]/70">
-                  Entry ${p.average_entry_price.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                  Entrée ${p.average_entry_price.toLocaleString("fr-FR", { maximumFractionDigits: 4 })}
                 </div>
                 <div className="text-sm text-[#E6EDF3]/80">
-                  ${p.current_price.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                  ${p.current_price.toLocaleString("fr-FR", { maximumFractionDigits: 4 })}
                 </div>
                 <div className="text-sm font-semibold" style={{ color: posColor }}>
-                  {pnlPrefix}${Math.abs(p.pnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}{" "}
+                  {pnlPrefix}${Math.abs(p.pnl).toLocaleString("fr-FR", { maximumFractionDigits: 2 })}{" "}
                   P/L
                 </div>
                 <Button
@@ -220,11 +234,10 @@ function Portfolio() {
         </div>
       </Card>
 
-      {/* Performance — placeholder (pas d’endpoint dédié dans ce bloc) */}
       <Card className="p-6">
-        <h2 className="text-base font-semibold">Portfolio Performance</h2>
+        <h2 className="text-base font-semibold">Performance (indicatif)</h2>
         <div className="mt-1 text-sm text-[#E6EDF3]/70">
-          (courbe indicative — données historiques non branchées)
+          Courbe illustrative — historique agrégé non branché pour l’instant.
         </div>
         <Divider className="my-4" />
 
@@ -251,7 +264,7 @@ function LineChartPlaceholder() {
     .join(" ");
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[180px]">
+    <svg viewBox={`0 0 ${w} ${h}`} className="h-[180px] w-full">
       <rect x="0" y="0" width={w} height={h} fill="#111827" rx="14" />
       {Array.from({ length: 5 }).map((_, i) => {
         const yy = (i / 4) * h;
